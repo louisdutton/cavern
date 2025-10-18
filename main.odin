@@ -50,10 +50,10 @@ stone_sprite := [4][4]u8{
 }
 
 water_sprite := [4][4]u8{
-    {1, 1, 2, 1},
-    {1, 2, 1, 1},
-    {2, 1, 1, 2},
-    {1, 1, 2, 1},
+    {3, 5, 3, 5},
+    {5, 3, 5, 3},
+    {3, 5, 3, 5},
+    {5, 3, 5, 3},
 }
 
 player_sprite := [4][4]u8{
@@ -63,12 +63,13 @@ player_sprite := [4][4]u8{
     {0, 4, 4, 0},
 }
 
-sprite_colors := [5]rl.Color{
+sprite_colors := [6]rl.Color{
     CATPPUCCIN_BASE,
     CATPPUCCIN_SURFACE0,
     CATPPUCCIN_OVERLAY0,
-    CATPPUCCIN_LAVENDER,
+    CATPPUCCIN_BLUE,
     CATPPUCCIN_RED,
+    {74, 144, 226, 255},
 }
 
 game: Game
@@ -83,7 +84,9 @@ init_game :: proc() {
                 game.world[y][x] = .STONE
             } else if x == TILES_X-1 && (y < 6 || y > 9) {
                 game.world[y][x] = .STONE
-            } else if (x + y) % 3 == 0 {
+            } else if (x >= 3 && x <= 5 && y >= 4 && y <= 6) ||
+                      (x >= 10 && x <= 12 && y >= 8 && y <= 10) ||
+                      (x >= 7 && x <= 8 && y >= 2 && y <= 3) {
                 game.world[y][x] = .WATER
             } else {
                 game.world[y][x] = .GRASS
