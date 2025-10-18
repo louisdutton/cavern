@@ -86,10 +86,10 @@ water_sprite_b := [4][4]u8{
 }
 
 player_sprite := [4][4]u8{
-    {0, 4, 4, 0},
-    {4, 4, 4, 4},
-    {4, 4, 4, 4},
-    {0, 4, 4, 0},
+    {0, 7, 7, 0},
+    {7, 7, 7, 7},
+    {7, 7, 7, 7},
+    {0, 7, 7, 0},
 }
 
 enemy_sprite := [4][4]u8{
@@ -106,7 +106,7 @@ dust_sprite := [4][4]u8{
     {2, 0, 2, 0},
 }
 
-sprite_colors := [7]rl.Color{
+sprite_colors := [8]rl.Color{
     CATPPUCCIN_BASE,
     CATPPUCCIN_SURFACE0,
     CATPPUCCIN_OVERLAY0,
@@ -114,6 +114,7 @@ sprite_colors := [7]rl.Color{
     CATPPUCCIN_RED,
     {74, 144, 226, 255},
     {255, 184, 108, 255},
+    {255, 255, 255, 255},
 }
 
 game: Game
