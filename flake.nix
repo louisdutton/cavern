@@ -28,7 +28,7 @@
       {pkgs}:
         with pkgs; {
           default = stdenv.mkDerivation {
-            pname = "hollie";
+            pname = "cavern";
             version = "0.1.0";
             src = ./.;
 
@@ -39,14 +39,14 @@
             ];
 
             buildPhase = ''
-              odin build hollie -o:speed
+              odin build . -o:speed
             '';
 
             installPhase = ''
-              mkdir -p $out/bin $out/share/hollie
-              cp hollie.bin $out/bin/hollie
+              mkdir -p $out/bin $out/share/cavern
+              cp cavern.bin $out/bin/cavern
               cp -r res/* $out/share/
-              wrapProgram $out/bin/hollie \
+              wrapProgram $out/bin/cavern \
                 --set-default RES_ROOT $out/share
             '';
           };

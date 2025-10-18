@@ -1,4 +1,4 @@
-package hollie
+package main
 
 import rl "vendor:raylib"
 import "core:math/rand"
@@ -535,7 +535,7 @@ draw_dust :: proc() {
 
 main :: proc() {
     rl.SetConfigFlags({.WINDOW_UNDECORATED})
-    rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Hollie RPG")
+    rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "cavern")
     rl.SetTargetFPS(60)
 
     init_audio()
