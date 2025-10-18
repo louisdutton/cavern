@@ -10,6 +10,7 @@ SCALE :: 4
 TILE_SIZE :: 4
 TILES_X :: 16
 TILES_Y :: 16
+MOVE_DELAY :: 0.2
 
 CATPPUCCIN_BASE :: rl.Color{30, 30, 46, 255}
 CATPPUCCIN_SURFACE0 :: rl.Color{49, 50, 68, 255}
@@ -34,6 +35,7 @@ Game :: struct {
     world: [TILES_Y][TILES_X]Tile,
     render_texture: rl.RenderTexture2D,
     current_room: i32,
+    move_timer: f32,
 }
 
 grass_sprite := [4][4]u8{
@@ -115,6 +117,7 @@ init_game :: proc() {
     game.player = Player{x = 8, y = 8}
     game.render_texture = rl.LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT)
     game.current_room = 0
+    game.move_timer = 0
     load_room(0)
 }
 
@@ -125,19 +128,36 @@ is_tile_walkable :: proc(x, y: i32) -> bool {
     return game.world[y][x] != .STONE
 }
 
-update_player :: proc() {
+update_player :: proc(dt: f32) {
+    game.move_timer -= dt
+
+    if game.move_timer > 0 do return
+
     new_x := game.player.x
     new_y := game.player.y
+    moved := false
 
-    if rl.IsKeyPressed(.W) do new_y -= 1
-    if rl.IsKeyPressed(.S) do new_y += 1
-    if rl.IsKeyPressed(.A) do new_x -= 1
-    if rl.IsKeyPressed(.D) do new_x += 1
+    if rl.IsKeyDown(.W) {
+        new_y -= 1
+        moved = true
+    } else if rl.IsKeyDown(.S) {
+        new_y += 1
+        moved = true
+    } else if rl.IsKeyDown(.A) {
+        new_x -= 1
+        moved = true
+    } else if rl.IsKeyDown(.D) {
+        new_x += 1
+        moved = true
+    }
+
+    if !moved do return
 
     if new_x >= TILES_X {
         if game.current_room == 0 && new_y >= 7 && new_y <= 8 {
             game.current_room = 1
             game.player.x = 1
+            game.move_timer = MOVE_DELAY
             load_room(1)
             return
         }
@@ -147,6 +167,7 @@ update_player :: proc() {
         if game.current_room == 1 && new_y >= 7 && new_y <= 8 {
             game.current_room = 0
             game.player.x = TILES_X - 2
+            game.move_timer = MOVE_DELAY
             load_room(0)
             return
         }
@@ -155,6 +176,7 @@ update_player :: proc() {
     if is_tile_walkable(new_x, new_y) {
         game.player.x = new_x
         game.player.y = new_y
+        game.move_timer = MOVE_DELAY
     }
 }
 
@@ -203,7 +225,8 @@ main :: proc() {
     init_game()
 
     for !rl.WindowShouldClose() {
-        update_player()
+        dt := rl.GetFrameTime()
+        update_player(dt)
 
         rl.BeginTextureMode(game.render_texture)
         rl.ClearBackground(CATPPUCCIN_BASE)
