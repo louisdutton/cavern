@@ -10,7 +10,8 @@ SCALE :: 4
 TILE_SIZE :: 4
 TILES_X :: 16
 TILES_Y :: 16
-MOVE_DELAY :: 0.2
+MOVE_DELAY :: 0.1
+ENEMY_DELAY :: 0.3
 
 CATPPUCCIN_BASE :: rl.Color{30, 30, 46, 255}
 CATPPUCCIN_SURFACE0 :: rl.Color{49, 50, 68, 255}
@@ -22,6 +23,13 @@ CATPPUCCIN_LAVENDER :: rl.Color{180, 190, 254, 255}
 
 Player :: struct {
     x, y: i32,
+}
+
+Enemy :: struct {
+    x, y: i32,
+    direction: i32,
+    min_pos, max_pos: i32,
+    axis: u8,
 }
 
 Tile :: enum {
@@ -36,6 +44,8 @@ Game :: struct {
     render_texture: rl.RenderTexture2D,
     current_room: i32,
     move_timer: f32,
+    enemies: [dynamic]Enemy,
+    enemy_timer: f32,
 }
 
 grass_sprite := [4][4]u8{
@@ -66,18 +76,28 @@ player_sprite := [4][4]u8{
     {0, 4, 4, 0},
 }
 
-sprite_colors := [6]rl.Color{
+enemy_sprite := [4][4]u8{
+    {6, 6, 6, 6},
+    {6, 0, 0, 6},
+    {6, 0, 0, 6},
+    {6, 6, 6, 6},
+}
+
+sprite_colors := [7]rl.Color{
     CATPPUCCIN_BASE,
     CATPPUCCIN_SURFACE0,
     CATPPUCCIN_OVERLAY0,
     CATPPUCCIN_BLUE,
     CATPPUCCIN_RED,
     {74, 144, 226, 255},
+    {255, 184, 108, 255},
 }
 
 game: Game
 
 load_room :: proc(room_id: i32) {
+    clear(&game.enemies)
+
     for y in 0..<TILES_Y {
         for x in 0..<TILES_X {
             game.world[y][x] = .GRASS
@@ -98,6 +118,10 @@ load_room :: proc(room_id: i32) {
                 }
             }
         }
+
+        append(&game.enemies, Enemy{x = 2, y = 10, direction = 1, min_pos = 2, max_pos = 6, axis = 0})
+        append(&game.enemies, Enemy{x = 12, y = 3, direction = -1, min_pos = 9, max_pos = 13, axis = 0})
+
     } else if room_id == 1 {
         for y in 0..<TILES_Y {
             for x in 0..<TILES_X {
@@ -110,6 +134,8 @@ load_room :: proc(room_id: i32) {
                 }
             }
         }
+
+        append(&game.enemies, Enemy{x = 2, y = 2, direction = 1, min_pos = 2, max_pos = 13, axis = 1})
     }
 }
 
@@ -118,6 +144,8 @@ init_game :: proc() {
     game.render_texture = rl.LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT)
     game.current_room = 0
     game.move_timer = 0
+    game.enemy_timer = 0
+    game.enemies = make([dynamic]Enemy)
     load_room(0)
 }
 
@@ -180,6 +208,36 @@ update_player :: proc(dt: f32) {
     }
 }
 
+update_enemies :: proc(dt: f32) {
+    game.enemy_timer -= dt
+    if game.enemy_timer > 0 do return
+
+    for &enemy in game.enemies {
+        if enemy.axis == 0 {
+            enemy.x += enemy.direction
+            if enemy.x <= enemy.min_pos || enemy.x >= enemy.max_pos {
+                enemy.direction *= -1
+            }
+        } else {
+            enemy.y += enemy.direction
+            if enemy.y <= enemy.min_pos || enemy.y >= enemy.max_pos {
+                enemy.direction *= -1
+            }
+        }
+    }
+
+    game.enemy_timer = ENEMY_DELAY
+}
+
+check_player_death :: proc() -> bool {
+    for enemy in game.enemies {
+        if game.player.x == enemy.x && game.player.y == enemy.y {
+            return true
+        }
+    }
+    return false
+}
+
 draw_sprite :: proc(sprite: ^[4][4]u8, x, y: i32, transparent_index: u8 = 255) {
     for py in 0..<4 {
         for px in 0..<4 {
@@ -217,6 +275,14 @@ draw_player :: proc() {
     draw_sprite(&player_sprite, pixel_x, pixel_y, 0)
 }
 
+draw_enemies :: proc() {
+    for enemy in game.enemies {
+        pixel_x := enemy.x * TILE_SIZE
+        pixel_y := enemy.y * TILE_SIZE
+        draw_sprite(&enemy_sprite, pixel_x, pixel_y, 0)
+    }
+}
+
 main :: proc() {
     rl.SetConfigFlags({.WINDOW_UNDECORATED})
     rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Hollie RPG")
@@ -226,11 +292,19 @@ main :: proc() {
 
     for !rl.WindowShouldClose() {
         dt := rl.GetFrameTime()
+
         update_player(dt)
+        update_enemies(dt)
+
+        if check_player_death() {
+            init_game()
+            continue
+        }
 
         rl.BeginTextureMode(game.render_texture)
         rl.ClearBackground(CATPPUCCIN_BASE)
         draw_world()
+        draw_enemies()
         draw_player()
         rl.EndTextureMode()
 
