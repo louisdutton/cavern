@@ -1,7 +1,6 @@
 package hollie
 
 import rl "vendor:raylib"
-import "core:math"
 
 GAME_WIDTH :: 64
 GAME_HEIGHT :: 64
@@ -28,13 +27,17 @@ Game :: struct {
     render_texture: rl.RenderTexture2D,
 }
 
-init_game :: proc(game: ^Game) {
+game: Game
+
+init_game :: proc() {
     game.player = Player{x = 8, y = 8}
     game.render_texture = rl.LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT)
 
     for y in 0..<TILES_Y {
         for x in 0..<TILES_X {
-            if x == 0 || x == TILES_X-1 || y == 0 || y == TILES_Y-1 {
+            if x == 0 || y == 0 || y == TILES_Y-1 {
+                game.world[y][x] = .STONE
+            } else if x == TILES_X-1 && (y < 6 || y > 9) {
                 game.world[y][x] = .STONE
             } else if (x + y) % 3 == 0 {
                 game.world[y][x] = .WATER
@@ -45,17 +48,29 @@ init_game :: proc(game: ^Game) {
     }
 }
 
-update_player :: proc(player: ^Player) {
-    if rl.IsKeyPressed(.W) do player.y -= 1
-    if rl.IsKeyPressed(.S) do player.y += 1
-    if rl.IsKeyPressed(.A) do player.x -= 1
-    if rl.IsKeyPressed(.D) do player.x += 1
-
-    player.x = math.clamp(player.x, 1, TILES_X - 2)
-    player.y = math.clamp(player.y, 1, TILES_Y - 2)
+is_tile_walkable :: proc(x, y: i32) -> bool {
+    if x < 0 || x >= TILES_X || y < 0 || y >= TILES_Y {
+        return false
+    }
+    return game.world[y][x] != .STONE
 }
 
-draw_world :: proc(game: ^Game) {
+update_player :: proc() {
+    new_x := game.player.x
+    new_y := game.player.y
+
+    if rl.IsKeyPressed(.W) do new_y -= 1
+    if rl.IsKeyPressed(.S) do new_y += 1
+    if rl.IsKeyPressed(.A) do new_x -= 1
+    if rl.IsKeyPressed(.D) do new_x += 1
+
+    if is_tile_walkable(new_x, new_y) {
+        game.player.x = new_x
+        game.player.y = new_y
+    }
+}
+
+draw_world :: proc() {
     for y in 0..<TILES_Y {
         for x in 0..<TILES_X {
             tile_x := f32(x * TILE_SIZE)
@@ -73,9 +88,9 @@ draw_world :: proc(game: ^Game) {
     }
 }
 
-draw_player :: proc(player: ^Player) {
-    pixel_x := player.x * TILE_SIZE
-    pixel_y := player.y * TILE_SIZE
+draw_player :: proc() {
+    pixel_x := game.player.x * TILE_SIZE
+    pixel_y := game.player.y * TILE_SIZE
     rl.DrawRectangle(pixel_x, pixel_y, TILE_SIZE, TILE_SIZE, rl.RED)
 }
 
@@ -84,16 +99,15 @@ main :: proc() {
     rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Hollie RPG")
     rl.SetTargetFPS(60)
 
-    game := Game{}
-    init_game(&game)
+    init_game()
 
     for !rl.WindowShouldClose() {
-        update_player(&game.player)
+        update_player()
 
         rl.BeginTextureMode(game.render_texture)
         rl.ClearBackground(rl.BLACK)
-        draw_world(&game)
-        draw_player(&game.player)
+        draw_world()
+        draw_player()
         rl.EndTextureMode()
 
         rl.BeginDrawing()
