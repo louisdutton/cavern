@@ -8,7 +8,9 @@ GAME_HEIGHT :: 64
 WINDOW_WIDTH :: 256
 WINDOW_HEIGHT :: 256
 SCALE :: 4
-TILE_SIZE :: 8
+TILE_SIZE :: 4
+TILES_X :: 16
+TILES_Y :: 16
 
 Player :: struct {
     x, y: i32,
@@ -22,19 +24,19 @@ Tile :: enum {
 
 Game :: struct {
     player: Player,
-    world: [8][8]Tile,
+    world: [TILES_Y][TILES_X]Tile,
     render_texture: rl.RenderTexture2D,
 }
 
 init_game :: proc(game: ^Game) {
-    game.player = Player{x = 32, y = 32}
+    game.player = Player{x = 8, y = 8}
     game.render_texture = rl.LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT)
 
-    for y in 0..<8 {
-        for x in 0..<8 {
-            if x == 0 || x == 7 || y == 0 || y == 7 {
+    for y in 0..<TILES_Y {
+        for x in 0..<TILES_X {
+            if x == 0 || x == TILES_X-1 || y == 0 || y == TILES_Y-1 {
                 game.world[y][x] = .STONE
-            } else if (x + y) % 4 == 0 {
+            } else if (x + y) % 3 == 0 {
                 game.world[y][x] = .WATER
             } else {
                 game.world[y][x] = .GRASS
@@ -49,13 +51,13 @@ update_player :: proc(player: ^Player) {
     if rl.IsKeyPressed(.A) do player.x -= 1
     if rl.IsKeyPressed(.D) do player.x += 1
 
-    player.x = math.clamp(player.x, 0, GAME_WIDTH - 1)
-    player.y = math.clamp(player.y, 0, GAME_HEIGHT - 1)
+    player.x = math.clamp(player.x, 1, TILES_X - 2)
+    player.y = math.clamp(player.y, 1, TILES_Y - 2)
 }
 
 draw_world :: proc(game: ^Game) {
-    for y in 0..<8 {
-        for x in 0..<8 {
+    for y in 0..<TILES_Y {
+        for x in 0..<TILES_X {
             tile_x := f32(x * TILE_SIZE)
             tile_y := f32(y * TILE_SIZE)
 
@@ -72,10 +74,13 @@ draw_world :: proc(game: ^Game) {
 }
 
 draw_player :: proc(player: ^Player) {
-    rl.DrawRectangle(player.x, player.y, 2, 2, rl.RED)
+    pixel_x := player.x * TILE_SIZE
+    pixel_y := player.y * TILE_SIZE
+    rl.DrawRectangle(pixel_x, pixel_y, TILE_SIZE, TILE_SIZE, rl.RED)
 }
 
 main :: proc() {
+    rl.SetConfigFlags({.WINDOW_UNDECORATED})
     rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Hollie RPG")
     rl.SetTargetFPS(60)
 
