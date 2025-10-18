@@ -211,11 +211,7 @@ load_current_room :: proc() {
             ex := 2 + (i * 5) % 12
             ey := 2 + (i * 7) % 12
             axis := u8(i % 2)
-            if axis == 0 {
-                append(&game.enemies, Enemy{x = ex, y = ey, direction = 1, min_pos = 2, max_pos = 13, axis = axis})
-            } else {
-                append(&game.enemies, Enemy{x = ex, y = ey, direction = 1, min_pos = 2, max_pos = 13, axis = axis})
-            }
+            append(&game.enemies, Enemy{x = ex, y = ey, direction = 1, min_pos = 2, max_pos = 13, axis = axis})
         }
     }
 }
@@ -286,45 +282,31 @@ update_player :: proc(dt: f32) {
     if new_x >= TILES_X && room.connections[int(Direction.EAST)] && new_y >= 7 && new_y <= 8 {
         game.room_coords.x += 1
         game.player.x = 1
-        game.move_timer = MOVE_DELAY
-        load_current_room()
-        return
-    }
-
-    if new_x < 0 && room.connections[int(Direction.WEST)] && new_y >= 7 && new_y <= 8 {
+    } else if new_x < 0 && room.connections[int(Direction.WEST)] && new_y >= 7 && new_y <= 8 {
         game.room_coords.x -= 1
         game.player.x = TILES_X - 2
-        game.move_timer = MOVE_DELAY
-        load_current_room()
-        return
-    }
-
-    if new_y < 0 && room.connections[int(Direction.NORTH)] && new_x >= 7 && new_x <= 8 {
+    } else if new_y < 0 && room.connections[int(Direction.NORTH)] && new_x >= 7 && new_x <= 8 {
         game.room_coords.y -= 1
         game.player.y = TILES_Y - 2
-        game.move_timer = MOVE_DELAY
-        load_current_room()
-        return
-    }
-
-    if new_y >= TILES_Y && room.connections[int(Direction.SOUTH)] && new_x >= 7 && new_x <= 8 {
+    } else if new_y >= TILES_Y && room.connections[int(Direction.SOUTH)] && new_x >= 7 && new_x <= 8 {
         game.room_coords.y += 1
         game.player.y = 1
-        game.move_timer = MOVE_DELAY
-        load_current_room()
+    } else {
+        if is_tile_walkable(new_x, new_y) {
+            spawn_dust(game.player.x, game.player.y)
+            game.player.x = new_x
+            game.player.y = new_y
+            game.move_timer = MOVE_DELAY
+
+            pitch := 0.8 + f32((game.player.x + game.player.y) % 5) * 0.1
+            rl.SetSoundPitch(game.click_sound, pitch)
+            rl.PlaySound(game.click_sound)
+        }
         return
     }
 
-    if is_tile_walkable(new_x, new_y) {
-        spawn_dust(game.player.x, game.player.y)
-        game.player.x = new_x
-        game.player.y = new_y
-        game.move_timer = MOVE_DELAY
-
-        pitch := 0.8 + f32((game.player.x + game.player.y) % 5) * 0.1
-        rl.SetSoundPitch(game.click_sound, pitch)
-        rl.PlaySound(game.click_sound)
-    }
+    game.move_timer = MOVE_DELAY
+    load_current_room()
 }
 
 update_enemies :: proc(dt: f32) {
