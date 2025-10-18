@@ -55,6 +55,8 @@ Game :: struct {
     enemy_timer: f32,
     dust_particles: [dynamic]DustParticle,
     water_time: f32,
+    music: rl.Music,
+    click_sound: rl.Sound,
 }
 
 grass_sprite := [4][4]u8{
@@ -184,6 +186,13 @@ init_game :: proc() {
     load_room(0)
 }
 
+init_audio :: proc() {
+    rl.InitAudioDevice()
+    game.music = rl.LoadMusicStream("res/music.mp3")
+    game.click_sound = rl.LoadSound("res/click.wav")
+    rl.PlayMusicStream(game.music)
+}
+
 is_tile_walkable :: proc(x, y: i32) -> bool {
     if x < 0 || x >= TILES_X || y < 0 || y >= TILES_Y {
         return false
@@ -241,6 +250,10 @@ update_player :: proc(dt: f32) {
         game.player.x = new_x
         game.player.y = new_y
         game.move_timer = MOVE_DELAY
+
+        pitch := 0.8 + f32((game.player.x + game.player.y) % 5) * 0.1
+        rl.SetSoundPitch(game.click_sound, pitch)
+        rl.PlaySound(game.click_sound)
     }
 }
 
@@ -387,10 +400,13 @@ main :: proc() {
     rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "Hollie RPG")
     rl.SetTargetFPS(60)
 
+    init_audio()
     init_game()
 
     for !rl.WindowShouldClose() {
         dt := rl.GetFrameTime()
+
+        rl.UpdateMusicStream(game.music)
 
         update_player(dt)
         update_enemies(dt)
@@ -421,6 +437,9 @@ main :: proc() {
         rl.EndDrawing()
     }
 
+    rl.UnloadMusicStream(game.music)
+    rl.UnloadSound(game.click_sound)
+    rl.CloseAudioDevice()
     rl.UnloadRenderTexture(game.render_texture)
     rl.CloseWindow()
 } 
