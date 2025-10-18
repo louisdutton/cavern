@@ -33,6 +33,7 @@ Game :: struct {
     player: Player,
     world: [TILES_Y][TILES_X]Tile,
     render_texture: rl.RenderTexture2D,
+    current_room: i32,
 }
 
 grass_sprite := [4][4]u8{
@@ -74,25 +75,47 @@ sprite_colors := [6]rl.Color{
 
 game: Game
 
-init_game :: proc() {
-    game.player = Player{x = 8, y = 8}
-    game.render_texture = rl.LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT)
-
+load_room :: proc(room_id: i32) {
     for y in 0..<TILES_Y {
         for x in 0..<TILES_X {
-            if x == 0 || y == 0 || y == TILES_Y-1 {
-                game.world[y][x] = .STONE
-            } else if x == TILES_X-1 && (y < 6 || y > 9) {
-                game.world[y][x] = .STONE
-            } else if (x >= 3 && x <= 5 && y >= 4 && y <= 6) ||
-                      (x >= 10 && x <= 12 && y >= 8 && y <= 10) ||
-                      (x >= 7 && x <= 8 && y >= 2 && y <= 3) {
-                game.world[y][x] = .WATER
-            } else {
-                game.world[y][x] = .GRASS
+            game.world[y][x] = .GRASS
+        }
+    }
+
+    if room_id == 0 {
+        for y in 0..<TILES_Y {
+            for x in 0..<TILES_X {
+                if x == 0 || y == 0 || y == TILES_Y-1 {
+                    game.world[y][x] = .STONE
+                } else if x == TILES_X-1 && (y < 7 || y > 8) {
+                    game.world[y][x] = .STONE
+                } else if (x >= 3 && x <= 5 && y >= 4 && y <= 6) ||
+                          (x >= 10 && x <= 12 && y >= 8 && y <= 10) ||
+                          (x >= 7 && x <= 8 && y >= 2 && y <= 3) {
+                    game.world[y][x] = .WATER
+                }
+            }
+        }
+    } else if room_id == 1 {
+        for y in 0..<TILES_Y {
+            for x in 0..<TILES_X {
+                if y == 0 || y == TILES_Y-1 || x == TILES_X-1 {
+                    game.world[y][x] = .STONE
+                } else if x == 0 && (y < 7 || y > 8) {
+                    game.world[y][x] = .STONE
+                } else if (x >= 4 && x <= 11 && y >= 6 && y <= 9) {
+                    game.world[y][x] = .WATER
+                }
             }
         }
     }
+}
+
+init_game :: proc() {
+    game.player = Player{x = 8, y = 8}
+    game.render_texture = rl.LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT)
+    game.current_room = 0
+    load_room(0)
 }
 
 is_tile_walkable :: proc(x, y: i32) -> bool {
@@ -111,19 +134,39 @@ update_player :: proc() {
     if rl.IsKeyPressed(.A) do new_x -= 1
     if rl.IsKeyPressed(.D) do new_x += 1
 
+    if new_x >= TILES_X {
+        if game.current_room == 0 && new_y >= 7 && new_y <= 8 {
+            game.current_room = 1
+            game.player.x = 1
+            load_room(1)
+            return
+        }
+    }
+
+    if new_x < 0 {
+        if game.current_room == 1 && new_y >= 7 && new_y <= 8 {
+            game.current_room = 0
+            game.player.x = TILES_X - 2
+            load_room(0)
+            return
+        }
+    }
+
     if is_tile_walkable(new_x, new_y) {
         game.player.x = new_x
         game.player.y = new_y
     }
 }
 
-draw_sprite :: proc(sprite: ^[4][4]u8, x, y: i32) {
+draw_sprite :: proc(sprite: ^[4][4]u8, x, y: i32, transparent_index: u8 = 255) {
     for py in 0..<4 {
         for px in 0..<4 {
             color_index := sprite[py][px]
-            pixel_x := x + i32(px)
-            pixel_y := y + i32(py)
-            rl.DrawPixel(pixel_x, pixel_y, sprite_colors[color_index])
+            if color_index != transparent_index {
+                pixel_x := x + i32(px)
+                pixel_y := y + i32(py)
+                rl.DrawPixel(pixel_x, pixel_y, sprite_colors[color_index])
+            }
         }
     }
 }
@@ -149,7 +192,7 @@ draw_world :: proc() {
 draw_player :: proc() {
     pixel_x := game.player.x * TILE_SIZE
     pixel_y := game.player.y * TILE_SIZE
-    draw_sprite(&player_sprite, pixel_x, pixel_y)
+    draw_sprite(&player_sprite, pixel_x, pixel_y, 0)
 }
 
 main :: proc() {
