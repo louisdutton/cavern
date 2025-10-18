@@ -1,6 +1,7 @@
 package hollie
 
 import rl "vendor:raylib"
+import "core:math/rand"
 
 GAME_WIDTH :: 64
 GAME_HEIGHT :: 64
@@ -43,7 +44,27 @@ Tile :: enum {
     GRASS,
     STONE,
     WATER,
+    EXIT,
 }
+
+Direction :: enum {
+    NORTH,
+    SOUTH,
+    EAST,
+    WEST,
+}
+
+Room :: struct {
+    id: i32,
+    x, y: i32,
+    connections: [4]bool,
+    is_start: bool,
+    is_end: bool,
+    has_enemies: bool,
+}
+
+FLOOR_WIDTH :: 5
+FLOOR_HEIGHT :: 5
 
 Game :: struct {
     player: Player,
@@ -57,6 +78,8 @@ Game :: struct {
     water_time: f32,
     music: rl.Music,
     click_sound: rl.Sound,
+    floor_layout: [FLOOR_HEIGHT][FLOOR_WIDTH]Room,
+    room_coords: [2]i32,
 }
 
 grass_sprite := [4][4]u8{
@@ -108,7 +131,14 @@ dust_sprite := [4][4]u8{
     {2, 0, 2, 0},
 }
 
-sprite_colors := [8]rl.Color{
+exit_sprite := [4][4]u8{
+    {8, 8, 8, 8},
+    {8, 7, 7, 8},
+    {8, 7, 7, 8},
+    {8, 8, 8, 8},
+}
+
+sprite_colors := [9]rl.Color{
     CATPPUCCIN_BASE,
     CATPPUCCIN_SURFACE0,
     CATPPUCCIN_OVERLAY0,
@@ -117,12 +147,76 @@ sprite_colors := [8]rl.Color{
     {74, 144, 226, 255},
     {255, 184, 108, 255},
     {255, 255, 255, 255},
+    CATPPUCCIN_GREEN,
 }
 
 game: Game
 
-load_room :: proc(room_id: i32) {
+generate_floor :: proc() {
+
+    for y in 0..<FLOOR_HEIGHT {
+        for x in 0..<FLOOR_WIDTH {
+            game.floor_layout[y][x] = Room{
+                id = i32(y * FLOOR_WIDTH + x),
+                x = i32(x),
+                y = i32(y),
+            }
+        }
+    }
+
+    start_x := rand.int31() % FLOOR_WIDTH
+    start_y := rand.int31() % FLOOR_HEIGHT
+    game.floor_layout[start_y][start_x].is_start = true
+
+    end_x := rand.int31() % FLOOR_WIDTH
+    end_y := rand.int31() % FLOOR_HEIGHT
+    for end_x == start_x && end_y == start_y {
+        end_x = rand.int31() % FLOOR_WIDTH
+        end_y = rand.int31() % FLOOR_HEIGHT
+    }
+    game.floor_layout[end_y][end_x].is_end = true
+
+    current_x, current_y := start_x, start_y
+    for current_x != end_x || current_y != end_y {
+
+        if current_x < end_x {
+            next_x, next_y := current_x + 1, current_y
+            game.floor_layout[current_y][current_x].connections[int(Direction.EAST)] = true
+            game.floor_layout[next_y][next_x].connections[int(Direction.WEST)] = true
+            current_x = next_x
+        } else if current_x > end_x {
+            next_x, next_y := current_x - 1, current_y
+            game.floor_layout[current_y][current_x].connections[int(Direction.WEST)] = true
+            game.floor_layout[next_y][next_x].connections[int(Direction.EAST)] = true
+            current_x = next_x
+        } else if current_y < end_y {
+            next_x, next_y := current_x, current_y + 1
+            game.floor_layout[current_y][current_x].connections[int(Direction.SOUTH)] = true
+            game.floor_layout[next_y][next_x].connections[int(Direction.NORTH)] = true
+            current_y = next_y
+        } else if current_y > end_y {
+            next_x, next_y := current_x, current_y - 1
+            game.floor_layout[current_y][current_x].connections[int(Direction.NORTH)] = true
+            game.floor_layout[next_y][next_x].connections[int(Direction.SOUTH)] = true
+            current_y = next_y
+        }
+    }
+
+    for y in 0..<FLOOR_HEIGHT {
+        for x in 0..<FLOOR_WIDTH {
+            if !game.floor_layout[y][x].is_start && !game.floor_layout[y][x].is_end {
+                game.floor_layout[y][x].has_enemies = rand.int31() % 3 == 0
+            }
+        }
+    }
+
+    game.room_coords = {start_x, start_y}
+}
+
+load_current_room :: proc() {
     clear(&game.enemies)
+
+    room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
 
     for y in 0..<TILES_Y {
         for x in 0..<TILES_X {
@@ -130,38 +224,66 @@ load_room :: proc(room_id: i32) {
         }
     }
 
-    if room_id == 0 {
-        for y in 0..<TILES_Y {
-            for x in 0..<TILES_X {
-                if x == 0 || y == 0 || y == TILES_Y-1 {
-                    game.world[y][x] = .STONE
-                } else if x == TILES_X-1 && (y < 7 || y > 8) {
-                    game.world[y][x] = .STONE
-                } else if (x >= 3 && x <= 5 && y >= 4 && y <= 6) ||
-                          (x >= 10 && x <= 12 && y >= 8 && y <= 10) ||
-                          (x >= 7 && x <= 8 && y >= 2 && y <= 3) {
-                    game.world[y][x] = .WATER
+    for y in 0..<TILES_Y {
+        for x in 0..<TILES_X {
+            if y == 0 && !room.connections[int(Direction.NORTH)] {
+                game.world[y][x] = .STONE
+            } else if y == TILES_Y-1 && !room.connections[int(Direction.SOUTH)] {
+                game.world[y][x] = .STONE
+            } else if x == 0 && !room.connections[int(Direction.WEST)] {
+                game.world[y][x] = .STONE
+            } else if x == TILES_X-1 && !room.connections[int(Direction.EAST)] {
+                game.world[y][x] = .STONE
+            }
+        }
+    }
+
+    for y in 7..=8 {
+        if room.connections[int(Direction.NORTH)] && game.world[0][y] == .STONE {
+            game.world[0][y] = .GRASS
+        }
+        if room.connections[int(Direction.SOUTH)] && game.world[TILES_Y-1][y] == .STONE {
+            game.world[TILES_Y-1][y] = .GRASS
+        }
+    }
+    for x in 7..=8 {
+        if room.connections[int(Direction.WEST)] && game.world[x][0] == .STONE {
+            game.world[x][0] = .GRASS
+        }
+        if room.connections[int(Direction.EAST)] && game.world[x][TILES_X-1] == .STONE {
+            game.world[x][TILES_X-1] = .GRASS
+        }
+    }
+
+    if room.is_end {
+        game.world[8][8] = .EXIT
+    } else {
+        water_count := 2 + (room.id % 3)
+        for i in 0..<water_count {
+            wx := 3 + (i * 4) % 10
+            wy := 3 + (i * 3) % 10
+            for dy in 0..<2 {
+                for dx in 0..<2 {
+                    if i32(wx) + i32(dx) < TILES_X-1 && i32(wy) + i32(dy) < TILES_Y-1 {
+                        game.world[i32(wy) + i32(dy)][i32(wx) + i32(dx)] = .WATER
+                    }
                 }
             }
         }
+    }
 
-        append(&game.enemies, Enemy{x = 2, y = 10, direction = 1, min_pos = 2, max_pos = 6, axis = 0})
-        append(&game.enemies, Enemy{x = 12, y = 3, direction = -1, min_pos = 9, max_pos = 13, axis = 0})
-
-    } else if room_id == 1 {
-        for y in 0..<TILES_Y {
-            for x in 0..<TILES_X {
-                if y == 0 || y == TILES_Y-1 || x == TILES_X-1 {
-                    game.world[y][x] = .STONE
-                } else if x == 0 && (y < 7 || y > 8) {
-                    game.world[y][x] = .STONE
-                } else if (x >= 4 && x <= 11 && y >= 6 && y <= 9) {
-                    game.world[y][x] = .WATER
-                }
+    if room.has_enemies {
+        enemy_count := 1 + (room.id % 3)
+        for i in 0..<enemy_count {
+            ex := 2 + (i * 5) % 12
+            ey := 2 + (i * 7) % 12
+            axis := u8(i % 2)
+            if axis == 0 {
+                append(&game.enemies, Enemy{x = ex, y = ey, direction = 1, min_pos = 2, max_pos = 13, axis = axis})
+            } else {
+                append(&game.enemies, Enemy{x = ex, y = ey, direction = 1, min_pos = 2, max_pos = 13, axis = axis})
             }
         }
-
-        append(&game.enemies, Enemy{x = 2, y = 2, direction = 1, min_pos = 2, max_pos = 13, axis = 1})
     }
 }
 
@@ -183,7 +305,8 @@ init_game :: proc() {
     game.water_time = 0
     game.enemies = make([dynamic]Enemy)
     game.dust_particles = make([dynamic]DustParticle)
-    load_room(0)
+    generate_floor()
+    load_current_room()
 }
 
 init_audio :: proc() {
@@ -225,24 +348,38 @@ update_player :: proc(dt: f32) {
 
     if !moved do return
 
-    if new_x >= TILES_X {
-        if game.current_room == 0 && new_y >= 7 && new_y <= 8 {
-            game.current_room = 1
-            game.player.x = 1
-            game.move_timer = MOVE_DELAY
-            load_room(1)
-            return
-        }
+    room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
+
+    if new_x >= TILES_X && room.connections[int(Direction.EAST)] && new_y >= 7 && new_y <= 8 {
+        game.room_coords.x += 1
+        game.player.x = 1
+        game.move_timer = MOVE_DELAY
+        load_current_room()
+        return
     }
 
-    if new_x < 0 {
-        if game.current_room == 1 && new_y >= 7 && new_y <= 8 {
-            game.current_room = 0
-            game.player.x = TILES_X - 2
-            game.move_timer = MOVE_DELAY
-            load_room(0)
-            return
-        }
+    if new_x < 0 && room.connections[int(Direction.WEST)] && new_y >= 7 && new_y <= 8 {
+        game.room_coords.x -= 1
+        game.player.x = TILES_X - 2
+        game.move_timer = MOVE_DELAY
+        load_current_room()
+        return
+    }
+
+    if new_y < 0 && room.connections[int(Direction.NORTH)] && new_x >= 7 && new_x <= 8 {
+        game.room_coords.y -= 1
+        game.player.y = TILES_Y - 2
+        game.move_timer = MOVE_DELAY
+        load_current_room()
+        return
+    }
+
+    if new_y >= TILES_Y && room.connections[int(Direction.SOUTH)] && new_x >= 7 && new_x <= 8 {
+        game.room_coords.y += 1
+        game.player.y = 1
+        game.move_timer = MOVE_DELAY
+        load_current_room()
+        return
     }
 
     if is_tile_walkable(new_x, new_y) {
@@ -328,6 +465,7 @@ draw_world :: proc() {
                 } else {
                     sprite = &water_sprite_b
                 }
+            case .EXIT: sprite = &exit_sprite
             }
 
             draw_sprite(sprite, tile_x, tile_y)
@@ -414,6 +552,12 @@ main :: proc() {
         game.water_time += dt
 
         if check_player_death() {
+            init_game()
+            continue
+        }
+
+        room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
+        if room.is_end && game.player.x == 8 && game.player.y == 8 {
             init_game()
             continue
         }
