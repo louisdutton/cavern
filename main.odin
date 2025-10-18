@@ -11,6 +11,14 @@ TILE_SIZE :: 4
 TILES_X :: 16
 TILES_Y :: 16
 
+CATPPUCCIN_BASE :: rl.Color{30, 30, 46, 255}
+CATPPUCCIN_SURFACE0 :: rl.Color{49, 50, 68, 255}
+CATPPUCCIN_OVERLAY0 :: rl.Color{108, 112, 134, 255}
+CATPPUCCIN_BLUE :: rl.Color{137, 180, 250, 255}
+CATPPUCCIN_GREEN :: rl.Color{166, 227, 161, 255}
+CATPPUCCIN_RED :: rl.Color{243, 139, 168, 255}
+CATPPUCCIN_LAVENDER :: rl.Color{180, 190, 254, 255}
+
 Player :: struct {
     x, y: i32,
 }
@@ -25,6 +33,42 @@ Game :: struct {
     player: Player,
     world: [TILES_Y][TILES_X]Tile,
     render_texture: rl.RenderTexture2D,
+}
+
+grass_sprite := [4][4]u8{
+    {0, 0, 0, 0},
+    {0, 1, 0, 0},
+    {0, 0, 0, 1},
+    {0, 0, 0, 0},
+}
+
+stone_sprite := [4][4]u8{
+    {1, 1, 2, 1},
+    {1, 2, 1, 1},
+    {2, 1, 1, 2},
+    {1, 1, 2, 1},
+}
+
+water_sprite := [4][4]u8{
+    {1, 1, 2, 1},
+    {1, 2, 1, 1},
+    {2, 1, 1, 2},
+    {1, 1, 2, 1},
+}
+
+player_sprite := [4][4]u8{
+    {0, 4, 4, 0},
+    {4, 4, 4, 4},
+    {4, 4, 4, 4},
+    {0, 4, 4, 0},
+}
+
+sprite_colors := [5]rl.Color{
+    CATPPUCCIN_BASE,
+    CATPPUCCIN_SURFACE0,
+    CATPPUCCIN_OVERLAY0,
+    CATPPUCCIN_LAVENDER,
+    CATPPUCCIN_RED,
 }
 
 game: Game
@@ -70,20 +114,31 @@ update_player :: proc() {
     }
 }
 
+draw_sprite :: proc(sprite: ^[4][4]u8, x, y: i32) {
+    for py in 0..<4 {
+        for px in 0..<4 {
+            color_index := sprite[py][px]
+            pixel_x := x + i32(px)
+            pixel_y := y + i32(py)
+            rl.DrawPixel(pixel_x, pixel_y, sprite_colors[color_index])
+        }
+    }
+}
+
 draw_world :: proc() {
     for y in 0..<TILES_Y {
         for x in 0..<TILES_X {
-            tile_x := f32(x * TILE_SIZE)
-            tile_y := f32(y * TILE_SIZE)
+            tile_x := i32(x * TILE_SIZE)
+            tile_y := i32(y * TILE_SIZE)
 
-            color: rl.Color
+            sprite: ^[4][4]u8
             switch game.world[y][x] {
-            case .GRASS: color = rl.GREEN
-            case .STONE: color = rl.GRAY
-            case .WATER: color = rl.BLUE
+            case .GRASS: sprite = &grass_sprite
+            case .STONE: sprite = &stone_sprite
+            case .WATER: sprite = &water_sprite
             }
 
-            rl.DrawRectangle(i32(tile_x), i32(tile_y), TILE_SIZE, TILE_SIZE, color)
+            draw_sprite(sprite, tile_x, tile_y)
         }
     }
 }
@@ -91,7 +146,7 @@ draw_world :: proc() {
 draw_player :: proc() {
     pixel_x := game.player.x * TILE_SIZE
     pixel_y := game.player.y * TILE_SIZE
-    rl.DrawRectangle(pixel_x, pixel_y, TILE_SIZE, TILE_SIZE, rl.RED)
+    draw_sprite(&player_sprite, pixel_x, pixel_y)
 }
 
 main :: proc() {
@@ -105,7 +160,7 @@ main :: proc() {
         update_player()
 
         rl.BeginTextureMode(game.render_texture)
-        rl.ClearBackground(rl.BLACK)
+        rl.ClearBackground(CATPPUCCIN_BASE)
         draw_world()
         draw_player()
         rl.EndTextureMode()
