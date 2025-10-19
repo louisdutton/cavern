@@ -183,3 +183,35 @@ draw_battle_entities :: proc() {
 		}
 	}
 }
+
+draw_transition_bars :: proc() {
+	progress := game.transition_timer / TRANSITION_DURATION
+	bar_height := i32(8)
+	num_bars := i32(8)
+
+	for i in 0 ..< num_bars {
+		bar_y := i * bar_height
+
+		if progress < 0.5 {
+			bar_width := i32(f32(GAME_SIZE) * (progress * 2))
+			for y in 0 ..< bar_height {
+				for x in 0 ..< bar_width {
+					if bar_y + y < GAME_SIZE {
+						rl.DrawPixel(x, bar_y + y, rl.BLACK)
+					}
+				}
+			}
+		} else {
+			reverse_progress := 1.0 - progress
+			bar_width := i32(f32(GAME_SIZE) * (reverse_progress * 2))
+			start_x := GAME_SIZE - bar_width
+			for y in 0 ..< bar_height {
+				for x in start_x ..< GAME_SIZE {
+					if bar_y + y < GAME_SIZE {
+						rl.DrawPixel(x, bar_y + y, rl.BLACK)
+					}
+				}
+			}
+		}
+	}
+}

@@ -14,6 +14,7 @@ FLOOR_SIZE :: 5
 MOVE_DELAY :: 0.1
 ENEMY_DELAY :: 0.3
 DUST_LIFE :: 0.5
+TRANSITION_DURATION :: 1.0
 
 CATPPUCCIN_BASE :: rl.Color{30, 30, 46, 255}
 CATPPUCCIN_SURFACE0 :: rl.Color{49, 50, 68, 255}
@@ -56,6 +57,7 @@ Direction :: enum {
 
 GameState :: enum {
 	EXPLORATION,
+	BATTLE_TRANSITION,
 	BATTLE,
 }
 
@@ -108,6 +110,8 @@ Game :: struct {
 	room_coords:    [2]i32,
 	state:          GameState,
 	battle_grid:    BattleGrid,
+	transition_timer: f32,
+	pending_enemy_pos: [2]i32,
 }
 
 game: Game
@@ -128,6 +132,19 @@ spawn_damage_indicator :: proc(x, y: i32) {
 
 add_screen_shake :: proc(intensity: f32) {
 	game.battle_grid.screen_shake = max(game.battle_grid.screen_shake, intensity)
+}
+
+start_battle_transition :: proc(enemy_x, enemy_y: i32) {
+	game.state = .BATTLE_TRANSITION
+	game.transition_timer = 0
+	game.pending_enemy_pos = {enemy_x, enemy_y}
+}
+
+update_transition :: proc(dt: f32) {
+	game.transition_timer += dt
+	if game.transition_timer >= TRANSITION_DURATION {
+		init_battle(game.pending_enemy_pos.x, game.pending_enemy_pos.y)
+	}
 }
 
 init_game :: proc() {
@@ -212,6 +229,17 @@ main :: proc() {
 			draw_dust()
 			draw_enemies()
 			draw_player()
+			rl.EndTextureMode()
+		} else if game.state == .BATTLE_TRANSITION {
+			update_transition(dt)
+
+			rl.BeginTextureMode(game.render_texture)
+			rl.ClearBackground(CATPPUCCIN_BASE)
+			draw_world()
+			draw_dust()
+			draw_enemies()
+			draw_player()
+			draw_transition_bars()
 			rl.EndTextureMode()
 		} else if game.state == .BATTLE {
 			update_battle(dt)
