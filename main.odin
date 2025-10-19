@@ -245,6 +245,14 @@ init_battle :: proc(enemy_x, enemy_y: i32) {
 
 end_battle :: proc() {
 	game.state = .EXPLORATION
+
+	for i := len(game.enemies) - 1; i >= 0; i -= 1 {
+		if game.enemies[i].x == game.player.x && game.enemies[i].y == game.player.y {
+			ordered_remove(&game.enemies, i)
+			break
+		}
+	}
+
 	clear(&game.battle_grid.entities)
 }
 

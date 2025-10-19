@@ -17,6 +17,19 @@ draw_sprite :: proc(sprite: ^Sprite, x, y: i32, transparent_index: u8 = 255) {
 	}
 }
 
+draw_battle_sprite :: proc(sprite: ^BattleSprite, x, y: i32, transparent_index: u8 = 255) {
+	for py in 0 ..< 8 {
+		for px in 0 ..< 8 {
+			color_index := sprite[py][px]
+			if color_index != transparent_index {
+				pixel_x := x + i32(px)
+				pixel_y := y + i32(py)
+				rl.DrawPixel(pixel_x, pixel_y, sprite_colors[color_index])
+			}
+		}
+	}
+}
+
 draw_world :: proc() {
 	for y in 0 ..< TILES_SIZE {
 		for x in 0 ..< TILES_SIZE {
@@ -129,9 +142,9 @@ draw_battle_entities :: proc() {
 		pixel_y := entity.y * grid_size
 
 		if entity.is_player {
-			draw_sprite(&player_sprite, pixel_x, pixel_y, 0)
+			draw_battle_sprite(&battle_player_sprite, pixel_x, pixel_y, 0)
 		} else {
-			draw_sprite(&enemy_sprite, pixel_x, pixel_y, 0)
+			draw_battle_sprite(&battle_enemy_sprite, pixel_x, pixel_y, 0)
 		}
 	}
 }
