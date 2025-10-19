@@ -18,8 +18,8 @@ draw_sprite :: proc(sprite: ^Sprite, x, y: i32, transparent_index: u8 = 255) {
 }
 
 draw_world :: proc() {
-	for y in 0 ..< TILES_X {
-		for x in 0 ..< TILES_X {
+	for y in 0 ..< TILES_SIZE {
+		for x in 0 ..< TILES_SIZE {
 			tile_x := i32(x * TILE_SIZE)
 			tile_y := i32(y * TILE_SIZE)
 

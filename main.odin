@@ -3,16 +3,13 @@ package main
 import "core:math/rand"
 import rl "vendor:raylib"
 
-GAME_WIDTH :: 64
-GAME_HEIGHT :: 64
-WINDOW_WIDTH :: 256
-WINDOW_HEIGHT :: 256
+GAME_SIZE :: 64
+WINDOW_SIZE :: 256
 
-TILES_X :: 16
-CENTRE :: TILES_X / 2
-TILE_COUNT :: TILES_X * TILES_X
-FLOOR_WIDTH :: 5
-FLOOR_HEIGHT :: 5
+TILES_SIZE :: 16
+CENTRE :: TILES_SIZE / 2
+TILE_COUNT :: TILES_SIZE * TILES_SIZE
+FLOOR_SIZE :: 5
 
 MOVE_DELAY :: 0.1
 ENEMY_DELAY :: 0.3
@@ -69,7 +66,7 @@ Room :: struct {
 
 Game :: struct {
 	player:         Player,
-	world:          [TILES_X][TILES_X]Tile,
+	world:          [TILES_SIZE][TILES_SIZE]Tile,
 	render_texture: rl.RenderTexture2D,
 	current_room:   i32,
 	move_timer:     f32,
@@ -79,7 +76,7 @@ Game :: struct {
 	water_time:     f32,
 	music:          rl.Music,
 	click_sound:    rl.Sound,
-	floor_layout:   [FLOOR_HEIGHT][FLOOR_WIDTH]Room,
+	floor_layout:   [FLOOR_SIZE][FLOOR_SIZE]Room,
 	room_coords:    [2]i32,
 }
 
@@ -88,25 +85,25 @@ game: Game
 
 generate_floor :: proc() {
 
-	for y in 0 ..< FLOOR_HEIGHT {
-		for x in 0 ..< FLOOR_WIDTH {
+	for y in 0 ..< FLOOR_SIZE {
+		for x in 0 ..< FLOOR_SIZE {
 			game.floor_layout[y][x] = Room {
-				id = i32(y * FLOOR_WIDTH + x),
+				id = i32(y * FLOOR_SIZE + x),
 				x  = i32(x),
 				y  = i32(y),
 			}
 		}
 	}
 
-	start_x := rand.int31() % FLOOR_WIDTH
-	start_y := rand.int31() % FLOOR_HEIGHT
+	start_x := rand.int31() % FLOOR_SIZE
+	start_y := rand.int31() % FLOOR_SIZE
 	game.floor_layout[start_y][start_x].is_start = true
 
-	end_x := rand.int31() % FLOOR_WIDTH
-	end_y := rand.int31() % FLOOR_HEIGHT
+	end_x := rand.int31() % FLOOR_SIZE
+	end_y := rand.int31() % FLOOR_SIZE
 	for end_x == start_x && end_y == start_y {
-		end_x = rand.int31() % FLOOR_WIDTH
-		end_y = rand.int31() % FLOOR_HEIGHT
+		end_x = rand.int31() % FLOOR_SIZE
+		end_y = rand.int31() % FLOOR_SIZE
 	}
 	game.floor_layout[end_y][end_x].is_end = true
 
@@ -136,8 +133,8 @@ generate_floor :: proc() {
 		}
 	}
 
-	for y in 0 ..< FLOOR_HEIGHT {
-		for x in 0 ..< FLOOR_WIDTH {
+	for y in 0 ..< FLOOR_SIZE {
+		for x in 0 ..< FLOOR_SIZE {
 			if !game.floor_layout[y][x].is_start && !game.floor_layout[y][x].is_end {
 				game.floor_layout[y][x].has_enemies = rand.int31() % 3 == 0
 			}
@@ -153,19 +150,19 @@ load_current_room :: proc() {
 	room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
 
 	// floor
-	for y in 0 ..< TILES_X {
-		for x in 0 ..< TILES_X {
+	for y in 0 ..< TILES_SIZE {
+		for x in 0 ..< TILES_SIZE {
 			game.world[y][x] = .GRASS
 		}
 	}
 
 	// walls
-	for y in 0 ..< TILES_X {
-		for x in 0 ..< TILES_X {
+	for y in 0 ..< TILES_SIZE {
+		for x in 0 ..< TILES_SIZE {
 			if (y == 0 && !room.connections[.NORTH]) ||
-			   (y == TILES_X - 1 && !room.connections[.SOUTH]) ||
+			   (y == TILES_SIZE - 1 && !room.connections[.SOUTH]) ||
 			   (x == 0 && !room.connections[.WEST]) ||
-			   (x == TILES_X - 1 && !room.connections[.EAST]) {
+			   (x == TILES_SIZE - 1 && !room.connections[.EAST]) {
 				game.world[y][x] = .STONE
 			}
 		}
@@ -181,7 +178,7 @@ load_current_room :: proc() {
 			wy := 3 + (i * 3) % 10
 			for dy in 0 ..< 2 {
 				for dx in 0 ..< 2 {
-					if i32(wx) + i32(dx) < TILES_X - 1 && i32(wy) + i32(dy) < TILES_X - 1 {
+					if i32(wx) + i32(dx) < TILES_SIZE - 1 && i32(wy) + i32(dy) < TILES_SIZE - 1 {
 						game.world[i32(wy) + i32(dy)][i32(wx) + i32(dx)] = .WATER
 					}
 				}
@@ -216,7 +213,7 @@ init_game :: proc() {
 		x = CENTRE,
 		y = CENTRE,
 	}
-	game.render_texture = rl.LoadRenderTexture(GAME_WIDTH, GAME_HEIGHT)
+	game.render_texture = rl.LoadRenderTexture(GAME_SIZE, GAME_SIZE)
 	game.current_room = 0
 	game.move_timer = 0
 	game.enemy_timer = 0
@@ -265,16 +262,16 @@ update_player :: proc(dt: f32) {
 
 	room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
 
-	if new_x >= TILES_X && room.connections[.EAST] {
+	if new_x >= TILES_SIZE && room.connections[.EAST] {
 		game.room_coords.x += 1
 		game.player.x = 1
 	} else if new_x < 0 && room.connections[.WEST]  {
 		game.room_coords.x -= 1
-		game.player.x = TILES_X - 2
+		game.player.x = TILES_SIZE - 2
 	} else if new_y < 0 && room.connections[.NORTH]  {
 		game.room_coords.y -= 1
-		game.player.y = TILES_X - 2
-	} else if new_y >= TILES_X && room.connections[.SOUTH] {
+		game.player.y = TILES_SIZE - 2
+	} else if new_y >= TILES_SIZE && room.connections[.SOUTH] {
 		game.room_coords.y += 1
 		game.player.y = 1
 	} else {
@@ -338,7 +335,7 @@ check_player_death :: proc() -> bool {
 
 main :: proc() {
 	rl.SetConfigFlags({.WINDOW_UNDECORATED})
-	rl.InitWindow(WINDOW_WIDTH, WINDOW_HEIGHT, "cavern")
+	rl.InitWindow(WINDOW_SIZE, WINDOW_SIZE, "cavern")
 	rl.SetTargetFPS(24)
 
 	init_audio()
@@ -376,8 +373,8 @@ main :: proc() {
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.BLACK)
 
-		dest_rect := rl.Rectangle{0, 0, WINDOW_WIDTH, WINDOW_HEIGHT}
-		source_rect := rl.Rectangle{0, 0, GAME_WIDTH, -GAME_HEIGHT}
+		dest_rect := rl.Rectangle{0, 0, WINDOW_SIZE, WINDOW_SIZE}
+		source_rect := rl.Rectangle{0, 0, GAME_SIZE, -GAME_SIZE}
 
 		rl.DrawTexturePro(game.render_texture.texture, source_rect, dest_rect, {0, 0}, 0, rl.WHITE)
 
