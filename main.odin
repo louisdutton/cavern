@@ -109,6 +109,7 @@ Game :: struct {
 	room_coords:    [2]i32,
 	state:          GameState,
 	battle_grid:    BattleGrid,
+	floor_number:   i32,
 }
 
 game: Game
@@ -148,6 +149,9 @@ init_game :: proc() {
 	game.battle_grid.entities = make([dynamic]BattleEntity)
 	game.battle_grid.attack_indicators = make([dynamic][2]i32)
 	game.battle_grid.damage_indicators = make([dynamic]DamageIndicator)
+	if game.floor_number == 0 {
+		game.floor_number = 1
+	}
 	generate_floor()
 	load_current_room()
 }
@@ -205,6 +209,7 @@ main :: proc() {
 
 			room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
 			if room.is_end && game.player.x == CENTRE && game.player.y == CENTRE {
+				game.floor_number += 1
 				init_game()
 				continue
 			}
@@ -212,6 +217,7 @@ main :: proc() {
 			rl.BeginTextureMode(game.render_texture)
 			rl.ClearBackground(CATPPUCCIN_BASE)
 			draw_world()
+			draw_floor_number()
 			draw_dust()
 			draw_enemies()
 			draw_player()

@@ -110,6 +110,49 @@ draw_dust :: proc() {
 	}
 }
 
+draw_floor_number :: proc() {
+	room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
+	if !room.is_start do return
+
+	floor_str := [16]u8{}
+	floor_len := 0
+	num := game.floor_number
+
+	if num == 0 {
+		floor_str[0] = 0
+		floor_len = 1
+	} else {
+		temp_num := num
+		for temp_num > 0 {
+			floor_str[floor_len] = u8(temp_num % 10)
+			temp_num /= 10
+			floor_len += 1
+		}
+
+		for i in 0 ..< floor_len / 2 {
+			temp := floor_str[i]
+			floor_str[i] = floor_str[floor_len - 1 - i]
+			floor_str[floor_len - 1 - i] = temp
+		}
+	}
+
+	start_x := CENTRE - i32(floor_len) * 2
+	start_y := CENTRE - 2
+
+	for i in 0 ..< floor_len {
+		digit := floor_str[i]
+		digit_x := start_x + i32(i) * 5
+		digit_y := start_y
+
+		if digit_x >= 1 && digit_x + 3 < TILES_SIZE - 1 &&
+		   digit_y >= 1 && digit_y + 3 < TILES_SIZE - 1 {
+			pixel_x := digit_x * TILE_SIZE
+			pixel_y := digit_y * TILE_SIZE
+			draw_sprite(&digit_sprites[digit], pixel_x, i32(pixel_y), 0)
+		}
+	}
+}
+
 draw_battle_grid :: proc() {
 	grid_size := i32(GAME_SIZE / game.battle_grid.size)
 

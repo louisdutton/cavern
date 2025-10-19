@@ -4,6 +4,9 @@ import "core:math/rand"
 import rl "vendor:raylib"
 
 generate_floor :: proc() {
+	visited := [FLOOR_SIZE][FLOOR_SIZE]bool{}
+	stack := [dynamic][2]i32{}
+	defer delete(stack)
 
 	for y in 0 ..< FLOOR_SIZE {
 		for x in 0 ..< FLOOR_SIZE {
@@ -19,43 +22,66 @@ generate_floor :: proc() {
 	start_y := rand.int31() % FLOOR_SIZE
 	game.floor_layout[start_y][start_x].is_start = true
 
+	current_x, current_y := start_x, start_y
+	visited[current_y][current_x] = true
+	append(&stack, [2]i32{current_x, current_y})
+
+	for len(stack) > 0 {
+		neighbors := [dynamic][3]i32{}
+		defer delete(neighbors)
+
+		if current_x > 0 && !visited[current_y][current_x - 1] {
+			append(&neighbors, [3]i32{current_x - 1, current_y, i32(Direction.WEST)})
+		}
+		if current_x < FLOOR_SIZE - 1 && !visited[current_y][current_x + 1] {
+			append(&neighbors, [3]i32{current_x + 1, current_y, i32(Direction.EAST)})
+		}
+		if current_y > 0 && !visited[current_y - 1][current_x] {
+			append(&neighbors, [3]i32{current_x, current_y - 1, i32(Direction.NORTH)})
+		}
+		if current_y < FLOOR_SIZE - 1 && !visited[current_y + 1][current_x] {
+			append(&neighbors, [3]i32{current_x, current_y + 1, i32(Direction.SOUTH)})
+		}
+
+		if len(neighbors) > 0 {
+			chosen := neighbors[rand.int31() % i32(len(neighbors))]
+			next_x, next_y, direction := chosen.x, chosen.y, Direction(chosen.z)
+
+			opposite_direction: Direction
+			switch direction {
+			case .NORTH: opposite_direction = .SOUTH
+			case .SOUTH: opposite_direction = .NORTH
+			case .EAST: opposite_direction = .WEST
+			case .WEST: opposite_direction = .EAST
+			}
+
+			game.floor_layout[current_y][current_x].connections[direction] = true
+			game.floor_layout[next_y][next_x].connections[opposite_direction] = true
+
+			visited[next_y][next_x] = true
+			append(&stack, [2]i32{next_x, next_y})
+			current_x, current_y = next_x, next_y
+		} else {
+			if len(stack) > 1 {
+				ordered_remove(&stack, len(stack) - 1)
+				current_x, current_y = stack[len(stack) - 1].x, stack[len(stack) - 1].y
+			} else {
+				break
+			}
+		}
+	}
+
 	end_x := rand.int31() % FLOOR_SIZE
 	end_y := rand.int31() % FLOOR_SIZE
-	for end_x == start_x && end_y == start_y {
+	for (end_x == start_x && end_y == start_y) || !visited[end_y][end_x] {
 		end_x = rand.int31() % FLOOR_SIZE
 		end_y = rand.int31() % FLOOR_SIZE
 	}
 	game.floor_layout[end_y][end_x].is_end = true
 
-	current_x, current_y := start_x, start_y
-	for current_x != end_x || current_y != end_y {
-
-		if current_x < end_x {
-			next_x, next_y := current_x + 1, current_y
-			game.floor_layout[current_y][current_x].connections[.EAST] = true
-			game.floor_layout[next_y][next_x].connections[.WEST] = true
-			current_x = next_x
-		} else if current_x > end_x {
-			next_x, next_y := current_x - 1, current_y
-			game.floor_layout[current_y][current_x].connections[.WEST] = true
-			game.floor_layout[next_y][next_x].connections[.EAST] = true
-			current_x = next_x
-		} else if current_y < end_y {
-			next_x, next_y := current_x, current_y + 1
-			game.floor_layout[current_y][current_x].connections[.SOUTH] = true
-			game.floor_layout[next_y][next_x].connections[.NORTH] = true
-			current_y = next_y
-		} else if current_y > end_y {
-			next_x, next_y := current_x, current_y - 1
-			game.floor_layout[current_y][current_x].connections[.NORTH] = true
-			game.floor_layout[next_y][next_x].connections[.SOUTH] = true
-			current_y = next_y
-		}
-	}
-
 	for y in 0 ..< FLOOR_SIZE {
 		for x in 0 ..< FLOOR_SIZE {
-			if !game.floor_layout[y][x].is_start && !game.floor_layout[y][x].is_end {
+			if visited[y][x] && !game.floor_layout[y][x].is_start && !game.floor_layout[y][x].is_end {
 				game.floor_layout[y][x].has_enemies = rand.int31() % 3 == 0
 			}
 		}
@@ -77,10 +103,29 @@ load_current_room :: proc() {
 
 	for y in 0 ..< TILES_SIZE {
 		for x in 0 ..< TILES_SIZE {
-			if (y == 0 && !room.connections[.NORTH]) ||
-			   (y == TILES_SIZE - 1 && !room.connections[.SOUTH]) ||
-			   (x == 0 && !room.connections[.WEST]) ||
-			   (x == TILES_SIZE - 1 && !room.connections[.EAST]) {
+			is_wall := false
+
+			if y == 0 && !room.connections[.NORTH] {
+				is_wall = true
+			} else if y == TILES_SIZE - 1 && !room.connections[.SOUTH] {
+				is_wall = true
+			} else if x == 0 && !room.connections[.WEST] {
+				is_wall = true
+			} else if x == TILES_SIZE - 1 && !room.connections[.EAST] {
+				is_wall = true
+			}
+
+			if y == 0 && room.connections[.NORTH] && (x < CENTRE - 1 || x > CENTRE) {
+				is_wall = true
+			} else if y == TILES_SIZE - 1 && room.connections[.SOUTH] && (x < CENTRE - 1 || x > CENTRE) {
+				is_wall = true
+			} else if x == 0 && room.connections[.WEST] && (y < CENTRE - 1 || y > CENTRE) {
+				is_wall = true
+			} else if x == TILES_SIZE - 1 && room.connections[.EAST] && (y < CENTRE - 1 || y > CENTRE) {
+				is_wall = true
+			}
+
+			if is_wall {
 				game.world[y][x] = .STONE
 			}
 		}
@@ -88,7 +133,7 @@ load_current_room :: proc() {
 
 	if room.is_end {
 		game.world[CENTRE][CENTRE] = .EXIT
-	} else {
+	} else if !room.is_start {
 		water_count := 2 + (room.id % 3)
 		for i in 0 ..< water_count {
 			wx := 3 + (i * 4) % 10
