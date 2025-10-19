@@ -274,7 +274,7 @@ update_player :: proc(dt: f32) {
 	} else if new_y < 0 && room.connections[.NORTH]  {
 		game.room_coords.y -= 1
 		game.player.y = TILES_X - 2
-	} else if new_y >= TILES_X && room.connections[.SOUTH] {}
+	} else if new_y >= TILES_X && room.connections[.SOUTH] {
 		game.room_coords.y += 1
 		game.player.y = 1
 	} else {
