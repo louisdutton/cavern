@@ -185,7 +185,9 @@ draw_battle_entities :: proc() {
 }
 
 draw_transition_bars :: proc() {
-	progress := game.transition_timer / TRANSITION_DURATION
+	if game.transition_timer <= 0 do return
+
+	progress := 1.0 - (game.transition_timer / TRANSITION_DURATION)
 	bar_height := i32(8)
 	num_bars := i32(8)
 
@@ -197,7 +199,7 @@ draw_transition_bars :: proc() {
 			for y in 0 ..< bar_height {
 				for x in 0 ..< bar_width {
 					if bar_y + y < GAME_SIZE {
-						rl.DrawPixel(x, bar_y + y, rl.BLACK)
+						rl.DrawPixel(x, bar_y + y, CATPPUCCIN_BASE)
 					}
 				}
 			}
@@ -208,7 +210,7 @@ draw_transition_bars :: proc() {
 			for y in 0 ..< bar_height {
 				for x in start_x ..< GAME_SIZE {
 					if bar_y + y < GAME_SIZE {
-						rl.DrawPixel(x, bar_y + y, rl.BLACK)
+						rl.DrawPixel(x, bar_y + y, CATPPUCCIN_BASE)
 					}
 				}
 			}
