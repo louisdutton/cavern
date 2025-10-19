@@ -1,5 +1,6 @@
 package main
 
+import "core:math/rand"
 import rl "vendor:raylib"
 
 GAME_SIZE :: 64
@@ -63,12 +64,23 @@ BattleEntity :: struct {
 	is_player: bool,
 	health: i32,
 	max_health: i32,
+	is_telegraphing: bool,
+	target_x, target_y: i32,
+}
+
+DamageIndicator :: struct {
+	x, y: i32,
+	life: f32,
+	max_life: f32,
 }
 
 BattleGrid :: struct {
 	size: i32,
 	entities: [dynamic]BattleEntity,
 	turn: i32,
+	attack_indicators: [dynamic][2]i32,
+	damage_indicators: [dynamic]DamageIndicator,
+	screen_shake: f32,
 }
 
 Room :: struct {
@@ -107,6 +119,17 @@ spawn_dust :: proc(x, y: i32) {
 	)
 }
 
+spawn_damage_indicator :: proc(x, y: i32) {
+	append(
+		&game.battle_grid.damage_indicators,
+		DamageIndicator{x = x, y = y, life = 0.3, max_life = 0.3},
+	)
+}
+
+add_screen_shake :: proc(intensity: f32) {
+	game.battle_grid.screen_shake = max(game.battle_grid.screen_shake, intensity)
+}
+
 init_game :: proc() {
 	game.player = Player {
 		x = CENTRE,
@@ -121,6 +144,8 @@ init_game :: proc() {
 	game.dust_particles = make([dynamic]DustParticle)
 	game.state = .EXPLORATION
 	game.battle_grid.entities = make([dynamic]BattleEntity)
+	game.battle_grid.attack_indicators = make([dynamic][2]i32)
+	game.battle_grid.damage_indicators = make([dynamic]DamageIndicator)
 	generate_floor()
 	load_current_room()
 }
@@ -138,6 +163,17 @@ update_dust :: proc(dt: f32) {
 		if game.dust_particles[i].life <= 0 {
 			ordered_remove(&game.dust_particles, i)
 		}
+	}
+
+	if game.state == .BATTLE {
+		for i := len(game.battle_grid.damage_indicators) - 1; i >= 0; i -= 1 {
+			game.battle_grid.damage_indicators[i].life -= dt
+			if game.battle_grid.damage_indicators[i].life <= 0 {
+				ordered_remove(&game.battle_grid.damage_indicators, i)
+			}
+		}
+
+		game.battle_grid.screen_shake = max(0, game.battle_grid.screen_shake - dt * 8)
 	}
 }
 
@@ -192,7 +228,14 @@ main :: proc() {
 		rl.BeginDrawing()
 		rl.ClearBackground(rl.BLACK)
 
-		dest_rect := rl.Rectangle{0, 0, WINDOW_SIZE, WINDOW_SIZE}
+		shake_x := f32(0)
+		shake_y := f32(0)
+		if game.state == .BATTLE && game.battle_grid.screen_shake > 0 {
+			shake_x = (f32(rand.int31() % 5) - 2) * game.battle_grid.screen_shake
+			shake_y = (f32(rand.int31() % 5) - 2) * game.battle_grid.screen_shake
+		}
+
+		dest_rect := rl.Rectangle{shake_x, shake_y, WINDOW_SIZE, WINDOW_SIZE}
 		source_rect := rl.Rectangle{0, 0, GAME_SIZE, -GAME_SIZE}
 
 		rl.DrawTexturePro(game.render_texture.texture, source_rect, dest_rect, {0, 0}, 0, rl.WHITE)

@@ -137,12 +137,47 @@ draw_battle_grid :: proc() {
 draw_battle_entities :: proc() {
 	grid_size := i32(GAME_SIZE / game.battle_grid.size)
 
+	for indicator in game.battle_grid.attack_indicators {
+		pixel_x := indicator.x * grid_size
+		pixel_y := indicator.y * grid_size
+
+		for py in 0 ..< grid_size {
+			for px in 0 ..< grid_size {
+				rl.DrawPixel(pixel_x + px, pixel_y + py, CATPPUCCIN_RED)
+			}
+		}
+	}
+
+	for damage in game.battle_grid.damage_indicators {
+		pixel_x := damage.x * grid_size
+		pixel_y := damage.y * grid_size
+		life_ratio := damage.life / damage.max_life
+		alpha := u8(life_ratio * 255)
+
+		for py in 0 ..< grid_size {
+			for px in 0 ..< grid_size {
+				if (px + py) % 2 == 0 {
+					damage_color := rl.Color{CATPPUCCIN_RED.r, CATPPUCCIN_RED.g, CATPPUCCIN_RED.b, alpha}
+					rl.DrawPixel(pixel_x + px, pixel_y + py, damage_color)
+				}
+			}
+		}
+	}
+
 	for entity in game.battle_grid.entities {
 		pixel_x := entity.x * grid_size
 		pixel_y := entity.y * grid_size
 
 		if entity.is_player {
 			draw_battle_sprite(&battle_player_sprite, pixel_x, pixel_y, 0)
+
+			for i in 0 ..< entity.health {
+				heart_x := pixel_x + i * 2
+				heart_y := pixel_y - 3
+				if heart_x >= 0 && heart_x < GAME_SIZE && heart_y >= 0 {
+					rl.DrawPixel(heart_x, heart_y, CATPPUCCIN_GREEN)
+				}
+			}
 		} else {
 			draw_battle_sprite(&battle_enemy_sprite, pixel_x, pixel_y, 0)
 		}
