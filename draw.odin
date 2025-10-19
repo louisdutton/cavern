@@ -96,3 +96,42 @@ draw_dust :: proc() {
 		}
 	}
 }
+
+draw_battle_grid :: proc() {
+	grid_size := i32(GAME_SIZE / game.battle_grid.size)
+
+	for y in 0 ..< game.battle_grid.size {
+		for x in 0 ..< game.battle_grid.size {
+			tile_x := x * grid_size
+			tile_y := y * grid_size
+
+			for py in 0 ..< grid_size {
+				for px in 0 ..< grid_size {
+					pixel_x := tile_x + px
+					pixel_y := tile_y + py
+
+					if (x + y) % 2 == 0 {
+						rl.DrawPixel(pixel_x, pixel_y, CATPPUCCIN_SURFACE0)
+					} else {
+						rl.DrawPixel(pixel_x, pixel_y, CATPPUCCIN_BASE)
+					}
+				}
+			}
+		}
+	}
+}
+
+draw_battle_entities :: proc() {
+	grid_size := i32(GAME_SIZE / game.battle_grid.size)
+
+	for entity in game.battle_grid.entities {
+		pixel_x := entity.x * grid_size
+		pixel_y := entity.y * grid_size
+
+		if entity.is_player {
+			draw_sprite(&player_sprite, pixel_x, pixel_y, 0)
+		} else {
+			draw_sprite(&enemy_sprite, pixel_x, pixel_y, 0)
+		}
+	}
+}
