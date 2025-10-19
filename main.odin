@@ -14,7 +14,6 @@ FLOOR_SIZE :: 5
 MOVE_DELAY :: 0.1
 ENEMY_DELAY :: 0.3
 DUST_LIFE :: 0.5
-TRANSITION_DURATION :: 1.0
 
 CATPPUCCIN_BASE :: rl.Color{30, 30, 46, 255}
 CATPPUCCIN_SURFACE0 :: rl.Color{49, 50, 68, 255}
@@ -59,6 +58,7 @@ GameState :: enum {
 	EXPLORATION,
 	BATTLE,
 }
+
 
 BattleEntity :: struct {
 	x, y: i32,
@@ -109,7 +109,6 @@ Game :: struct {
 	room_coords:    [2]i32,
 	state:          GameState,
 	battle_grid:    BattleGrid,
-	transition_timer: f32,
 }
 
 game: Game
@@ -132,9 +131,6 @@ add_screen_shake :: proc(intensity: f32) {
 	game.battle_grid.screen_shake = max(game.battle_grid.screen_shake, intensity)
 }
 
-start_battle_transition :: proc() {
-	game.transition_timer = TRANSITION_DURATION
-}
 
 init_game :: proc() {
 	game.player = Player {
@@ -182,7 +178,6 @@ update_dust :: proc(dt: f32) {
 		game.battle_grid.screen_shake = max(0, game.battle_grid.screen_shake - dt * 8)
 	}
 
-	game.transition_timer = max(0, game.transition_timer - dt)
 }
 
 main :: proc() {
@@ -220,7 +215,6 @@ main :: proc() {
 			draw_dust()
 			draw_enemies()
 			draw_player()
-			draw_transition_bars()
 			rl.EndTextureMode()
 		} else if game.state == .BATTLE {
 			update_battle(dt)
@@ -231,7 +225,6 @@ main :: proc() {
 			draw_battle_grid()
 			draw_dust()
 			draw_battle_entities()
-			draw_transition_bars()
 			rl.EndTextureMode()
 		}
 

@@ -204,7 +204,6 @@ update_enemies :: proc(dt: f32) {
 check_player_enemy_collision :: proc() -> bool {
 	for enemy in game.enemies {
 		if game.player.x == enemy.x && game.player.y == enemy.y {
-			start_battle_transition()
 			init_battle(enemy.x, enemy.y)
 			return true
 		}
