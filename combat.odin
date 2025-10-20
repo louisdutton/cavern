@@ -169,7 +169,7 @@ update_battle :: proc(dt: f32) {
 	if target != nil && !target.is_player {
 		target.health -= 1
 		spawn_damage_indicator(target.x, target.y)
-		add_screen_shake(0.4)
+		add_screen_shake(0.8)
 
 		rl.SetSoundPitch(game.click_sound, 1.2 + f32(rand.int31() % 3) * 0.1)
 		rl.PlaySound(game.click_sound)
@@ -181,7 +181,6 @@ update_battle :: proc(dt: f32) {
 					break
 				}
 			}
-			add_screen_shake(0.8)
 		}
 		game.move_timer = MOVE_DELAY
 		return
