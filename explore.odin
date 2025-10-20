@@ -282,6 +282,7 @@ update_player :: proc(dt: f32) {
 			pitch := 0.8 + f32((game.player.x + game.player.y) % 5) * 0.1
 			rl.SetSoundPitch(game.click_sound, pitch)
 			rl.PlaySound(game.click_sound)
+
 		} else if can_unlock_door(new_x, new_y) {
 			ordered_remove(&game.following_items, len(game.following_items) - 1)
 
@@ -300,6 +301,7 @@ update_player :: proc(dt: f32) {
 			pitch := 0.8 + f32((game.player.x + game.player.y) % 5) * 0.1
 			rl.SetSoundPitch(game.click_sound, pitch)
 			rl.PlaySound(game.click_sound)
+
 		}
 		return
 	}

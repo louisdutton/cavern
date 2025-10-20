@@ -173,6 +173,7 @@ init_game :: proc() {
 
 init_audio :: proc() {
 	rl.InitAudioDevice()
+	rl.SetMasterVolume(0.0)
 	game.music = rl.LoadMusicStream("res/music.mp3")
 	game.click_sound = rl.LoadSound("res/click.wav")
 	rl.PlayMusicStream(game.music)
