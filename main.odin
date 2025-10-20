@@ -13,7 +13,6 @@ FLOOR_SIZE :: 5
 
 MOVE_DELAY :: 0.1
 ENEMY_DELAY :: 0.3
-DUST_LIFE :: 0.25
 
 CATPPUCCIN_BASE :: rl.Color{30, 30, 46, 255}
 CATPPUCCIN_SURFACE0 :: rl.Color{49, 50, 68, 255}
@@ -39,11 +38,6 @@ Enemy :: struct {
 	axis:             u8,
 }
 
-DustParticle :: struct {
-	x, y:     i32,
-	life:     f32,
-	max_life: f32,
-}
 
 Tile :: enum {
 	GRASS,
@@ -110,7 +104,6 @@ Game :: struct {
 	move_timer:     f32,
 	enemies:        [dynamic]Enemy,
 	enemy_timer:    f32,
-	dust_particles: [dynamic]DustParticle,
 	water_time:     f32,
 	music:          rl.Music,
 	click_sound:    rl.Sound,
@@ -126,12 +119,6 @@ Game :: struct {
 
 game: Game
 
-spawn_dust :: proc(x, y: i32) {
-	append(
-		&game.dust_particles,
-		DustParticle{x = x, y = y, life = DUST_LIFE, max_life = DUST_LIFE},
-	)
-}
 
 spawn_damage_indicator :: proc(x, y: i32) {
 	append(
@@ -156,7 +143,6 @@ init_game :: proc() {
 	game.enemy_timer = 0
 	game.water_time = 0
 	game.enemies = make([dynamic]Enemy)
-	game.dust_particles = make([dynamic]DustParticle)
 	game.following_items = make([dynamic]FollowingItem)
 	game.collected_keys = make(map[i32]bool)
 	game.unlocked_doors = make(map[[3]i32]bool)
@@ -180,13 +166,6 @@ init_audio :: proc() {
 }
 
 update_dust :: proc(dt: f32) {
-	for i := len(game.dust_particles) - 1; i >= 0; i -= 1 {
-		game.dust_particles[i].life -= dt
-		if game.dust_particles[i].life <= 0 {
-			ordered_remove(&game.dust_particles, i)
-		}
-	}
-
 	if game.state == .BATTLE {
 		for i := len(game.battle_grid.damage_indicators) - 1; i >= 0; i -= 1 {
 			game.battle_grid.damage_indicators[i].life -= dt
@@ -234,7 +213,6 @@ main :: proc() {
 			rl.ClearBackground(CATPPUCCIN_BASE)
 			draw_world()
 			draw_floor_number()
-			draw_dust()
 			draw_enemies()
 			draw_following_items()
 			draw_player()
@@ -246,7 +224,6 @@ main :: proc() {
 			rl.BeginTextureMode(game.render_texture)
 			rl.ClearBackground(CATPPUCCIN_BASE)
 			draw_battle_grid()
-			draw_dust()
 			draw_battle_entities()
 			rl.EndTextureMode()
 		}

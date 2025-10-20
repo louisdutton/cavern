@@ -272,7 +272,6 @@ update_player :: proc(dt: f32) {
 				game.collected_keys[current_room.id] = true
 			}
 
-			spawn_dust_at_trail_end()
 			update_following_items(game.player.x, game.player.y)
 
 			game.player.x = new_x
@@ -291,7 +290,6 @@ update_player :: proc(dt: f32) {
 				unlock_door_connection(Direction(door_direction))
 			}
 
-			spawn_dust_at_trail_end()
 			update_following_items(game.player.x, game.player.y)
 
 			game.player.x = new_x
@@ -316,7 +314,6 @@ update_enemies :: proc(dt: f32) {
 	if game.enemy_timer > 0 do return
 
 	for &enemy in game.enemies {
-		spawn_dust(enemy.x, enemy.y)
 
 		if enemy.axis == 0 {
 			enemy.x += enemy.direction
@@ -344,14 +341,6 @@ check_player_enemy_collision :: proc() -> bool {
 	return false
 }
 
-spawn_dust_at_trail_end :: proc() {
-	if len(game.following_items) == 0 {
-		spawn_dust(game.player.x, game.player.y)
-	} else {
-		last_item := &game.following_items[len(game.following_items) - 1]
-		spawn_dust(last_item.x, last_item.y)
-	}
-}
 
 place_locked_doors_at_exits :: proc(room: ^Room) {
 	door_key := [3]i32{game.room_coords.x, game.room_coords.y, 0}

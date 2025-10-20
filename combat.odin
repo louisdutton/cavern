@@ -74,7 +74,6 @@ update_enemy_ai :: proc(enemy: ^BattleEntity) {
 		target := get_battle_entity_at(enemy.target_x, enemy.target_y)
 		if target != nil && target.is_player {
 			target.health -= 1
-			spawn_dust(enemy.target_x, enemy.target_y)
 			spawn_damage_indicator(enemy.target_x, enemy.target_y)
 			add_screen_shake(0.6)
 
@@ -123,8 +122,7 @@ update_enemy_ai :: proc(enemy: ^BattleEntity) {
 			}
 
 			if is_battle_position_valid(new_x, new_y) && get_battle_entity_at(new_x, new_y) == nil {
-				spawn_dust(enemy.x, enemy.y)
-				enemy.x = new_x
+					enemy.x = new_x
 				enemy.y = new_y
 			}
 		}
@@ -170,7 +168,6 @@ update_battle :: proc(dt: f32) {
 	target := get_battle_entity_at(new_x, new_y)
 	if target != nil && !target.is_player {
 		target.health -= 1
-		spawn_dust(target.x, target.y)
 		spawn_damage_indicator(target.x, target.y)
 		add_screen_shake(0.4)
 
@@ -191,7 +188,6 @@ update_battle :: proc(dt: f32) {
 	}
 
 	if target == nil {
-		spawn_dust(player_entity.x, player_entity.y)
 		player_entity.x = new_x
 		player_entity.y = new_y
 		game.move_timer = MOVE_DELAY

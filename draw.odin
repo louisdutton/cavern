@@ -79,25 +79,6 @@ draw_following_items :: proc() {
 	}
 }
 
-draw_dust_sprite :: proc(sprite: ^Sprite, x, y: i32, life_ratio: f32) {
-	draw_sprite(sprite, x, y, 0)
-}
-
-draw_dust :: proc() {
-	for dust in game.dust_particles {
-		life_ratio := dust.life / dust.max_life
-		pixel_x := dust.x * TILE_SIZE
-		pixel_y := dust.y * TILE_SIZE
-
-		if life_ratio > 0.3 {
-			draw_dust_sprite(&dust_sprite, pixel_x, pixel_y, life_ratio)
-		} else {
-			center_x := pixel_x + 2
-			center_y := pixel_y + 2
-			rl.DrawPixel(center_x, center_y, CATPPUCCIN_OVERLAY0)
-		}
-	}
-}
 
 draw_floor_number :: proc() {
 	room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
