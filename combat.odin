@@ -130,6 +130,15 @@ update_enemy_ai :: proc(enemy: ^BattleEntity) {
 }
 
 update_battle :: proc(dt: f32) {
+	for &entity in game.battle_grid.entities {
+		if entity.flash_timer > 0 {
+			entity.flash_timer -= dt
+			if entity.flash_timer < 0 {
+				entity.flash_timer = 0
+			}
+		}
+	}
+
 	game.move_timer -= dt
 	if game.move_timer > 0 do return
 
@@ -168,6 +177,7 @@ update_battle :: proc(dt: f32) {
 	target := get_battle_entity_at(new_x, new_y)
 	if target != nil && !target.is_player {
 		target.health -= 1
+		target.flash_timer = 0.1
 		spawn_damage_indicator(target.x, target.y)
 		add_screen_shake(0.8)
 

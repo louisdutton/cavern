@@ -17,14 +17,18 @@ draw_sprite :: proc(sprite: ^Sprite, x, y: i32, transparent_index: u8 = 255) {
 	}
 }
 
-draw_battle_sprite :: proc(sprite: ^BattleSprite, x, y: i32, transparent_index: u8 = 255) {
+draw_battle_sprite :: proc(sprite: ^BattleSprite, x, y: i32, transparent_index: u8 = 255, flash_white: bool = false) {
 	for py in 0 ..< 8 {
 		for px in 0 ..< 8 {
 			color_index := sprite[py][px]
 			if color_index != transparent_index {
 				pixel_x := x + i32(px)
 				pixel_y := y + i32(py)
-				rl.DrawPixel(pixel_x, pixel_y, sprite_colors[color_index])
+				if flash_white {
+					rl.DrawPixel(pixel_x, pixel_y, rl.WHITE)
+				} else {
+					rl.DrawPixel(pixel_x, pixel_y, sprite_colors[color_index])
+				}
 			}
 		}
 	}
@@ -192,7 +196,8 @@ draw_battle_entities :: proc() {
 				}
 			}
 		} else {
-			draw_battle_sprite(&battle_enemy_sprite, pixel_x, pixel_y, 0)
+			flash_white := entity.flash_timer > 0
+			draw_battle_sprite(&battle_enemy_sprite, pixel_x, pixel_y, 0, flash_white)
 		}
 	}
 }

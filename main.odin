@@ -68,6 +68,7 @@ BattleEntity :: struct {
 	max_health: i32,
 	is_telegraphing: bool,
 	target_x, target_y: i32,
+	flash_timer: f32,
 }
 
 DamageIndicator :: struct {
