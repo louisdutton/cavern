@@ -9,28 +9,29 @@ place_secret_walls :: proc() {
 			if room.id == 0 do continue
 
 			if rand.int31() % 8 == 0 {
-				if room.connections[.NORTH] {
-					wall_x := CENTRE - 1 + rand.int31() % 3
-					if wall_x != CENTRE - 1 && wall_x != CENTRE {
-						append(&room.secret_walls, [2]i32{wall_x, 0})
+				// Only place secret walls on walls without connections (no doors)
+				if !room.connections[.NORTH] {
+					wall_x := 1 + rand.int31() % (TILES_SIZE - 2)
+					if room.tiles[0][wall_x] == .STONE {
+						room.tiles[0][wall_x] = .SECRET_WALL
 					}
 				}
-				if room.connections[.SOUTH] {
-					wall_x := CENTRE - 1 + rand.int31() % 3
-					if wall_x != CENTRE - 1 && wall_x != CENTRE {
-						append(&room.secret_walls, [2]i32{wall_x, TILES_SIZE - 1})
+				if !room.connections[.SOUTH] {
+					wall_x := 1 + rand.int31() % (TILES_SIZE - 2)
+					if room.tiles[TILES_SIZE - 1][wall_x] == .STONE {
+						room.tiles[TILES_SIZE - 1][wall_x] = .SECRET_WALL
 					}
 				}
-				if room.connections[.WEST] {
-					wall_y := CENTRE - 1 + rand.int31() % 3
-					if wall_y != CENTRE - 1 && wall_y != CENTRE {
-						append(&room.secret_walls, [2]i32{0, wall_y})
+				if !room.connections[.WEST] {
+					wall_y := 1 + rand.int31() % (TILES_SIZE - 2)
+					if room.tiles[wall_y][0] == .STONE {
+						room.tiles[wall_y][0] = .SECRET_WALL
 					}
 				}
-				if room.connections[.EAST] {
-					wall_y := CENTRE - 1 + rand.int31() % 3
-					if wall_y != CENTRE - 1 && wall_y != CENTRE {
-						append(&room.secret_walls, [2]i32{TILES_SIZE - 1, wall_y})
+				if !room.connections[.EAST] {
+					wall_y := 1 + rand.int31() % (TILES_SIZE - 2)
+					if room.tiles[wall_y][TILES_SIZE - 1] == .STONE {
+						room.tiles[wall_y][TILES_SIZE - 1] = .SECRET_WALL
 					}
 				}
 			}

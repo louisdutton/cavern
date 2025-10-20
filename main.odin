@@ -96,7 +96,7 @@ Room :: struct {
 	is_end:      bool,
 	has_enemies: bool,
 	has_key:     bool,
-	secret_walls: [dynamic][2]i32,
+	tiles:       [TILES_SIZE][TILES_SIZE]Tile,
 }
 
 Game :: struct {

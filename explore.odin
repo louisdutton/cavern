@@ -14,7 +14,6 @@ generate_floor :: proc() {
 				id = i32(y * FLOOR_SIZE + x),
 				x  = i32(x),
 				y  = i32(y),
-				secret_walls = make([dynamic][2]i32),
 			}
 		}
 	}
@@ -89,94 +88,21 @@ generate_floor :: proc() {
 	}
 
 	place_strategic_doors_and_keys()
+
+	for y in 0 ..< FLOOR_SIZE {
+		for x in 0 ..< FLOOR_SIZE {
+			room := &game.floor_layout[y][x]
+			if room.id != 0 {
+				generate_room_tiles(room)
+			}
+		}
+	}
+
 	place_secret_walls()
 
 	game.room_coords = {start_x, start_y}
 }
 
-load_current_room :: proc() {
-	clear(&game.enemies)
-
-	room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
-
-	for y in 0 ..< TILES_SIZE {
-		for x in 0 ..< TILES_SIZE {
-			game.world[y][x] = .GRASS
-		}
-	}
-
-	for y in 0 ..< TILES_SIZE {
-		for x in 0 ..< TILES_SIZE {
-			is_wall := false
-
-			if y == 0 && !room.connections[.NORTH] {
-				is_wall = true
-			} else if y == TILES_SIZE - 1 && !room.connections[.SOUTH] {
-				is_wall = true
-			} else if x == 0 && !room.connections[.WEST] {
-				is_wall = true
-			} else if x == TILES_SIZE - 1 && !room.connections[.EAST] {
-				is_wall = true
-			}
-
-			if y == 0 && room.connections[.NORTH] && (x < CENTRE - 1 || x > CENTRE) {
-				is_wall = true
-			} else if y == TILES_SIZE - 1 && room.connections[.SOUTH] && (x < CENTRE - 1 || x > CENTRE) {
-				is_wall = true
-			} else if x == 0 && room.connections[.WEST] && (y < CENTRE - 1 || y > CENTRE) {
-				is_wall = true
-			} else if x == TILES_SIZE - 1 && room.connections[.EAST] && (y < CENTRE - 1 || y > CENTRE) {
-				is_wall = true
-			}
-
-			if is_wall {
-				game.world[y][x] = .STONE
-			}
-		}
-	}
-
-	for secret_wall in room.secret_walls {
-		game.world[secret_wall.y][secret_wall.x] = .SECRET_WALL
-	}
-
-	if room.is_end {
-		game.world[CENTRE][CENTRE] = .EXIT
-	} else if !room.is_start {
-		water_count := 2 + (room.id % 3)
-		for i in 0 ..< water_count {
-			wx := 3 + (i * 4) % 10
-			wy := 3 + (i * 3) % 10
-			for dy in 0 ..< 2 {
-				for dx in 0 ..< 2 {
-					if i32(wx) + i32(dx) < TILES_SIZE - 1 && i32(wy) + i32(dy) < TILES_SIZE - 1 {
-						game.world[i32(wy) + i32(dy)][i32(wx) + i32(dx)] = .WATER
-					}
-				}
-			}
-		}
-	}
-
-	if room.has_enemies {
-		enemy_count := 1 + (room.id % 3)
-		for i in 0 ..< enemy_count {
-			ex := 2 + (i * 5) % 12
-			ey := 2 + (i * 7) % 12
-			axis := u8(i % 2)
-			append(
-				&game.enemies,
-				Enemy{x = ex, y = ey, direction = 1, min_pos = 2, max_pos = 13, axis = axis},
-			)
-		}
-	}
-
-	if room.has_key {
-		key_x := CENTRE - 2 + (room.id % 3)
-		key_y := CENTRE - 1 + (room.id % 2)
-		game.world[key_y][key_x] = .KEY
-	}
-
-	place_locked_doors_at_exits(room)
-}
 
 is_tile_walkable :: proc(x, y: i32) -> bool {
 	return game.world[y][x] != .STONE && game.world[y][x] != .LOCKED_DOOR
