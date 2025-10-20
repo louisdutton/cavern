@@ -117,6 +117,7 @@ Game :: struct {
 	battle_grid:    BattleGrid,
 	floor_number:   i32,
 	following_items: [dynamic]FollowingItem,
+	collected_keys: map[i32]bool,
 }
 
 game: Game
@@ -153,6 +154,7 @@ init_game :: proc() {
 	game.enemies = make([dynamic]Enemy)
 	game.dust_particles = make([dynamic]DustParticle)
 	game.following_items = make([dynamic]FollowingItem)
+	game.collected_keys = make(map[i32]bool)
 	game.state = .EXPLORATION
 	game.battle_grid.entities = make([dynamic]BattleEntity)
 	game.battle_grid.attack_indicators = make([dynamic][2]i32)

@@ -161,7 +161,7 @@ load_current_room :: proc() {
 		}
 	}
 
-	if !room.is_start && !room.is_end && room.id % 4 == 1 {
+	if !room.is_start && !room.is_end && room.id % 4 == 1 && !game.collected_keys[room.id] {
 		key_x := 3 + (room.id * 2) % 10
 		key_y := 3 + (room.id * 3) % 10
 		game.world[key_y][key_x] = .KEY
@@ -213,13 +213,14 @@ update_player :: proc(dt: f32) {
 		game.player.y = 1
 	} else {
 		if is_tile_walkable(new_x, new_y) {
-			spawn_dust(game.player.x, game.player.y)
-
 			if game.world[new_y][new_x] == .KEY {
 				game.world[new_y][new_x] = .GRASS
 				append(&game.following_items, FollowingItem{x = new_x, y = new_y, target_x = game.player.x, target_y = game.player.y})
+				current_room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
+				game.collected_keys[current_room.id] = true
 			}
 
+			spawn_dust_at_trail_end()
 			update_following_items(game.player.x, game.player.y)
 
 			game.player.x = new_x
@@ -271,24 +272,31 @@ check_player_enemy_collision :: proc() -> bool {
 	return false
 }
 
+spawn_dust_at_trail_end :: proc() {
+	if len(game.following_items) == 0 {
+		spawn_dust(game.player.x, game.player.y)
+	} else {
+		last_item := &game.following_items[len(game.following_items) - 1]
+		spawn_dust(last_item.x, last_item.y)
+	}
+}
+
 update_following_items :: proc(player_x, player_y: i32) {
 	if len(game.following_items) == 0 do return
+
+	prev_x := player_x
+	prev_y := player_y
 
 	for i in 0 ..< len(game.following_items) {
 		item := &game.following_items[i]
 
-		if i == 0 {
-			item.target_x = player_x
-			item.target_y = player_y
-		} else {
-			prev_item := &game.following_items[i - 1]
-			item.target_x = prev_item.x
-			item.target_y = prev_item.y
-		}
+		old_x := item.x
+		old_y := item.y
 
-		if item.x != item.target_x || item.y != item.target_y {
-			item.x = item.target_x
-			item.y = item.target_y
-		}
+		item.x = prev_x
+		item.y = prev_y
+
+		prev_x = old_x
+		prev_y = old_y
 	}
 }
