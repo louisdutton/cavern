@@ -54,6 +54,7 @@ draw_world :: proc() {
 			case .EXIT: sprite = &exit_sprite
 			case .KEY: sprite = &key_sprite
 			case .LOCKED_DOOR: sprite = &locked_door_sprite
+			case .SECRET_WALL: sprite = &secret_wall_sprite
 			}
 
 			draw_sprite(sprite, tile_x, tile_y)

@@ -14,6 +14,7 @@ generate_floor :: proc() {
 				id = i32(y * FLOOR_SIZE + x),
 				x  = i32(x),
 				y  = i32(y),
+				secret_walls = make([dynamic][2]i32),
 			}
 		}
 	}
@@ -88,6 +89,7 @@ generate_floor :: proc() {
 	}
 
 	place_strategic_doors_and_keys()
+	place_secret_walls()
 
 	game.room_coords = {start_x, start_y}
 }
@@ -131,6 +133,10 @@ load_current_room :: proc() {
 				game.world[y][x] = .STONE
 			}
 		}
+	}
+
+	for secret_wall in room.secret_walls {
+		game.world[secret_wall.y][secret_wall.x] = .SECRET_WALL
 	}
 
 	if room.is_end {
@@ -279,6 +285,18 @@ update_player :: proc() {
 			game.move_timer = MOVE_DELAY
 
 			pitch := 0.8 + f32((game.player.x + game.player.y) % 5) * 0.1
+			rl.SetSoundPitch(game.click_sound, pitch)
+			rl.PlaySound(game.click_sound)
+
+		} else if game.world[new_y][new_x] == .SECRET_WALL {
+			game.world[new_y][new_x] = .GRASS
+			add_screen_shake(20)
+
+			game.player.x = new_x
+			game.player.y = new_y
+			game.move_timer = MOVE_DELAY
+
+			pitch := 1.0 + f32(rand.int31() % 3) * 0.2
 			rl.SetSoundPitch(game.click_sound, pitch)
 			rl.PlaySound(game.click_sound)
 

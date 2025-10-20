@@ -46,6 +46,7 @@ Tile :: enum {
 	EXIT,
 	KEY,
 	LOCKED_DOOR,
+	SECRET_WALL,
 }
 
 Direction :: enum {
@@ -95,6 +96,7 @@ Room :: struct {
 	is_end:      bool,
 	has_enemies: bool,
 	has_key:     bool,
+	secret_walls: [dynamic][2]i32,
 }
 
 Game :: struct {
@@ -158,7 +160,7 @@ init_game :: proc() {
 
 init_audio :: proc() {
 	rl.InitAudioDevice()
-	// rl.SetMasterVolume(0.0)
+	rl.SetMasterVolume(0.2)
 	game.music = rl.LoadMusicStream("res/music.mp3")
 	game.click_sound = rl.LoadSound("res/click.wav")
 	rl.PlayMusicStream(game.music)
