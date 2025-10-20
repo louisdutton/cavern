@@ -218,13 +218,35 @@ update_player :: proc() {
 			game.world[new_y][new_x] = .GRASS
 			add_screen_shake(20)
 
-			game.player.x = new_x
-			game.player.y = new_y
+			if new_x == 0 && game.room_coords.x > 0 {
+				game.room_coords.x -= 1
+				game.player.x = TILES_SIZE - 1
+				game.player.y = new_y
+			} else if new_x == TILES_SIZE - 1 && game.room_coords.x < FLOOR_SIZE - 1 {
+				game.room_coords.x += 1
+				game.player.x = 0
+				game.player.y = new_y
+			} else if new_y == 0 && game.room_coords.y > 0 {
+				game.room_coords.y -= 1
+				game.player.x = new_x
+				game.player.y = TILES_SIZE - 1
+			} else if new_y == TILES_SIZE - 1 && game.room_coords.y < FLOOR_SIZE - 1 {
+				game.room_coords.y += 1
+				game.player.x = new_x
+				game.player.y = 0
+			} else {
+				game.player.x = new_x
+				game.player.y = new_y
+			}
 			game.move_timer = MOVE_DELAY
 
 			pitch := 1.0 + f32(rand.int31() % 3) * 0.2
 			rl.SetSoundPitch(game.click_sound, pitch)
 			rl.PlaySound(game.click_sound)
+
+			if new_x == 0 || new_x == TILES_SIZE - 1 || new_y == 0 || new_y == TILES_SIZE - 1 {
+				load_current_room()
+			}
 
 		} else if can_unlock_door(new_x, new_y) {
 			ordered_remove(&game.following_items, len(game.following_items) - 1)

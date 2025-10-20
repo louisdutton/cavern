@@ -10,35 +10,40 @@ generate_room_tiles :: proc(room: ^Room) {
 		}
 	}
 
-	// Generate walls
+	// Generate perimeter walls - ALWAYS place walls on all edges
+	// Top wall
+	for x in 0 ..< TILES_SIZE {
+		room.tiles[0][x] = .STONE
+	}
+	// Bottom wall
+	for x in 0 ..< TILES_SIZE {
+		room.tiles[TILES_SIZE - 1][x] = .STONE
+	}
+	// Left wall
 	for y in 0 ..< TILES_SIZE {
-		for x in 0 ..< TILES_SIZE {
-			is_wall := false
+		room.tiles[y][0] = .STONE
+	}
+	// Right wall
+	for y in 0 ..< TILES_SIZE {
+		room.tiles[y][TILES_SIZE - 1] = .STONE
+	}
 
-			if y == 0 && !room.connections[.NORTH] {
-				is_wall = true
-			} else if y == TILES_SIZE - 1 && !room.connections[.SOUTH] {
-				is_wall = true
-			} else if x == 0 && !room.connections[.WEST] {
-				is_wall = true
-			} else if x == TILES_SIZE - 1 && !room.connections[.EAST] {
-				is_wall = true
-			}
-
-			if y == 0 && room.connections[.NORTH] && (x < CENTRE - 1 || x > CENTRE) {
-				is_wall = true
-			} else if y == TILES_SIZE - 1 && room.connections[.SOUTH] && (x < CENTRE - 1 || x > CENTRE) {
-				is_wall = true
-			} else if x == 0 && room.connections[.WEST] && (y < CENTRE - 1 || y > CENTRE) {
-				is_wall = true
-			} else if x == TILES_SIZE - 1 && room.connections[.EAST] && (y < CENTRE - 1 || y > CENTRE) {
-				is_wall = true
-			}
-
-			if is_wall {
-				room.tiles[y][x] = .STONE
-			}
-		}
+	// Only AFTER walls are guaranteed, create door openings
+	if room.connections[.NORTH] {
+		room.tiles[0][CENTRE - 1] = .GRASS
+		room.tiles[0][CENTRE] = .GRASS
+	}
+	if room.connections[.SOUTH] {
+		room.tiles[TILES_SIZE - 1][CENTRE - 1] = .GRASS
+		room.tiles[TILES_SIZE - 1][CENTRE] = .GRASS
+	}
+	if room.connections[.WEST] {
+		room.tiles[CENTRE - 1][0] = .GRASS
+		room.tiles[CENTRE][0] = .GRASS
+	}
+	if room.connections[.EAST] {
+		room.tiles[CENTRE - 1][TILES_SIZE - 1] = .GRASS
+		room.tiles[CENTRE][TILES_SIZE - 1] = .GRASS
 	}
 
 	// Place special tiles
