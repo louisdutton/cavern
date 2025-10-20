@@ -49,6 +49,7 @@ draw_world :: proc() {
 				}
 			case .EXIT: sprite = &exit_sprite
 			case .KEY: sprite = &key_sprite
+			case .LOCKED_DOOR: sprite = &locked_door_sprite
 			}
 
 			draw_sprite(sprite, tile_x, tile_y)
@@ -78,43 +79,22 @@ draw_following_items :: proc() {
 	}
 }
 
-draw_dust_sprite :: proc(sprite: ^Sprite, x, y: i32, alpha: u8) {
-	for py in 0 ..< TILE_SIZE {
-		for px in 0 ..< TILE_SIZE {
-			color_index := sprite[py][px]
-			if color_index != 0 {
-				pixel_x := x + i32(px)
-				pixel_y := y + i32(py)
-
-				base_color := sprite_colors[color_index]
-				dust_color := rl.Color{base_color.r, base_color.g, base_color.b, alpha}
-
-				rl.DrawPixel(pixel_x, pixel_y, dust_color)
-			}
-		}
-	}
+draw_dust_sprite :: proc(sprite: ^Sprite, x, y: i32, life_ratio: f32) {
+	draw_sprite(sprite, x, y, 0)
 }
 
 draw_dust :: proc() {
 	for dust in game.dust_particles {
 		life_ratio := dust.life / dust.max_life
-		alpha_u8 := u8(life_ratio * 255)
-
 		pixel_x := dust.x * TILE_SIZE
 		pixel_y := dust.y * TILE_SIZE
 
 		if life_ratio > 0.3 {
-			draw_dust_sprite(&dust_sprite, pixel_x, pixel_y, alpha_u8)
+			draw_dust_sprite(&dust_sprite, pixel_x, pixel_y, life_ratio)
 		} else {
-			dust_color := rl.Color {
-				CATPPUCCIN_OVERLAY0.r,
-				CATPPUCCIN_OVERLAY0.g,
-				CATPPUCCIN_OVERLAY0.b,
-				alpha_u8,
-			}
 			center_x := pixel_x + 2
 			center_y := pixel_y + 2
-			rl.DrawPixel(center_x, center_y, dust_color)
+			rl.DrawPixel(center_x, center_y, CATPPUCCIN_OVERLAY0)
 		}
 	}
 }

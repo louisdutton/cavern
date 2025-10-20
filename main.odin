@@ -13,7 +13,7 @@ FLOOR_SIZE :: 5
 
 MOVE_DELAY :: 0.1
 ENEMY_DELAY :: 0.3
-DUST_LIFE :: 0.5
+DUST_LIFE :: 0.25
 
 CATPPUCCIN_BASE :: rl.Color{30, 30, 46, 255}
 CATPPUCCIN_SURFACE0 :: rl.Color{49, 50, 68, 255}
@@ -51,6 +51,7 @@ Tile :: enum {
 	WATER,
 	EXIT,
 	KEY,
+	LOCKED_DOOR,
 }
 
 Direction :: enum {
@@ -94,9 +95,11 @@ Room :: struct {
 	id:          i32,
 	x, y:        i32,
 	connections: [Direction]bool,
+	locked_exits: [Direction]bool,
 	is_start:    bool,
 	is_end:      bool,
 	has_enemies: bool,
+	has_key:     bool,
 }
 
 Game :: struct {
@@ -118,6 +121,7 @@ Game :: struct {
 	floor_number:   i32,
 	following_items: [dynamic]FollowingItem,
 	collected_keys: map[i32]bool,
+	unlocked_doors: map[[3]i32]bool,
 }
 
 game: Game
@@ -155,6 +159,7 @@ init_game :: proc() {
 	game.dust_particles = make([dynamic]DustParticle)
 	game.following_items = make([dynamic]FollowingItem)
 	game.collected_keys = make(map[i32]bool)
+	game.unlocked_doors = make(map[[3]i32]bool)
 	game.state = .EXPLORATION
 	game.battle_grid.entities = make([dynamic]BattleEntity)
 	game.battle_grid.attack_indicators = make([dynamic][2]i32)

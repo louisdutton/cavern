@@ -87,6 +87,8 @@ generate_floor :: proc() {
 		}
 	}
 
+	place_strategic_doors_and_keys()
+
 	game.room_coords = {start_x, start_y}
 }
 
@@ -161,15 +163,65 @@ load_current_room :: proc() {
 		}
 	}
 
-	if !room.is_start && !room.is_end && room.id % 4 == 1 && !game.collected_keys[room.id] {
-		key_x := 3 + (room.id * 2) % 10
-		key_y := 3 + (room.id * 3) % 10
+	if room.has_key && !game.collected_keys[room.id] {
+		key_x := CENTRE - 2 + (room.id % 3)
+		key_y := CENTRE - 1 + (room.id % 2)
 		game.world[key_y][key_x] = .KEY
 	}
+
+	place_locked_doors_at_exits(room)
 }
 
 is_tile_walkable :: proc(x, y: i32) -> bool {
-	return game.world[y][x] != .STONE
+	return game.world[y][x] != .STONE && game.world[y][x] != .LOCKED_DOOR
+}
+
+can_unlock_door :: proc(x, y: i32) -> bool {
+	return game.world[y][x] == .LOCKED_DOOR && len(game.following_items) > 0
+}
+
+get_door_direction :: proc(x, y: i32) -> i32 {
+	if y == 0 && (x == CENTRE - 1 || x == CENTRE) do return i32(Direction.NORTH)
+	if y == TILES_SIZE - 1 && (x == CENTRE - 1 || x == CENTRE) do return i32(Direction.SOUTH)
+	if x == 0 && (y == CENTRE - 1 || y == CENTRE) do return i32(Direction.WEST)
+	if x == TILES_SIZE - 1 && (y == CENTRE - 1 || y == CENTRE) do return i32(Direction.EAST)
+	return -1
+}
+
+unlock_door_connection :: proc(direction: Direction) {
+	current_door_key := [3]i32{game.room_coords.x, game.room_coords.y, i32(direction)}
+	game.unlocked_doors[current_door_key] = true
+
+	switch direction {
+	case .NORTH:
+		game.world[0][CENTRE - 1] = .GRASS
+		game.world[0][CENTRE] = .GRASS
+		if game.room_coords.y > 0 {
+			neighbor_door_key := [3]i32{game.room_coords.x, game.room_coords.y - 1, i32(Direction.SOUTH)}
+			game.unlocked_doors[neighbor_door_key] = true
+		}
+	case .SOUTH:
+		game.world[TILES_SIZE - 1][CENTRE - 1] = .GRASS
+		game.world[TILES_SIZE - 1][CENTRE] = .GRASS
+		if game.room_coords.y < FLOOR_SIZE - 1 {
+			neighbor_door_key := [3]i32{game.room_coords.x, game.room_coords.y + 1, i32(Direction.NORTH)}
+			game.unlocked_doors[neighbor_door_key] = true
+		}
+	case .WEST:
+		game.world[CENTRE - 1][0] = .GRASS
+		game.world[CENTRE][0] = .GRASS
+		if game.room_coords.x > 0 {
+			neighbor_door_key := [3]i32{game.room_coords.x - 1, game.room_coords.y, i32(Direction.EAST)}
+			game.unlocked_doors[neighbor_door_key] = true
+		}
+	case .EAST:
+		game.world[CENTRE - 1][TILES_SIZE - 1] = .GRASS
+		game.world[CENTRE][TILES_SIZE - 1] = .GRASS
+		if game.room_coords.x < FLOOR_SIZE - 1 {
+			neighbor_door_key := [3]i32{game.room_coords.x + 1, game.room_coords.y, i32(Direction.WEST)}
+			game.unlocked_doors[neighbor_door_key] = true
+		}
+	}
 }
 
 update_player :: proc(dt: f32) {
@@ -201,16 +253,16 @@ update_player :: proc(dt: f32) {
 
 	if new_x >= TILES_SIZE && room.connections[.EAST] {
 		game.room_coords.x += 1
-		game.player.x = 1
+		game.player.x = 0
 	} else if new_x < 0 && room.connections[.WEST]  {
 		game.room_coords.x -= 1
-		game.player.x = TILES_SIZE - 2
+		game.player.x = TILES_SIZE - 1
 	} else if new_y < 0 && room.connections[.NORTH]  {
 		game.room_coords.y -= 1
-		game.player.y = TILES_SIZE - 2
+		game.player.y = TILES_SIZE - 1
 	} else if new_y >= TILES_SIZE && room.connections[.SOUTH] {
 		game.room_coords.y += 1
-		game.player.y = 1
+		game.player.y = 0
 	} else {
 		if is_tile_walkable(new_x, new_y) {
 			if game.world[new_y][new_x] == .KEY {
@@ -218,6 +270,24 @@ update_player :: proc(dt: f32) {
 				append(&game.following_items, FollowingItem{x = new_x, y = new_y, target_x = game.player.x, target_y = game.player.y})
 				current_room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
 				game.collected_keys[current_room.id] = true
+			}
+
+			spawn_dust_at_trail_end()
+			update_following_items(game.player.x, game.player.y)
+
+			game.player.x = new_x
+			game.player.y = new_y
+			game.move_timer = MOVE_DELAY
+
+			pitch := 0.8 + f32((game.player.x + game.player.y) % 5) * 0.1
+			rl.SetSoundPitch(game.click_sound, pitch)
+			rl.PlaySound(game.click_sound)
+		} else if can_unlock_door(new_x, new_y) {
+			ordered_remove(&game.following_items, len(game.following_items) - 1)
+
+			door_direction := get_door_direction(new_x, new_y)
+			if door_direction != -1 {
+				unlock_door_connection(Direction(door_direction))
 			}
 
 			spawn_dust_at_trail_end()
@@ -278,6 +348,149 @@ spawn_dust_at_trail_end :: proc() {
 	} else {
 		last_item := &game.following_items[len(game.following_items) - 1]
 		spawn_dust(last_item.x, last_item.y)
+	}
+}
+
+place_locked_doors_at_exits :: proc(room: ^Room) {
+	door_key := [3]i32{game.room_coords.x, game.room_coords.y, 0}
+
+	if room.locked_exits[.NORTH] {
+		door_key.z = i32(Direction.NORTH)
+		if !game.unlocked_doors[door_key] {
+			game.world[0][CENTRE - 1] = .LOCKED_DOOR
+			game.world[0][CENTRE] = .LOCKED_DOOR
+		}
+	}
+	if room.locked_exits[.SOUTH] {
+		door_key.z = i32(Direction.SOUTH)
+		if !game.unlocked_doors[door_key] {
+			game.world[TILES_SIZE - 1][CENTRE - 1] = .LOCKED_DOOR
+			game.world[TILES_SIZE - 1][CENTRE] = .LOCKED_DOOR
+		}
+	}
+	if room.locked_exits[.WEST] {
+		door_key.z = i32(Direction.WEST)
+		if !game.unlocked_doors[door_key] {
+			game.world[CENTRE - 1][0] = .LOCKED_DOOR
+			game.world[CENTRE][0] = .LOCKED_DOOR
+		}
+	}
+	if room.locked_exits[.EAST] {
+		door_key.z = i32(Direction.EAST)
+		if !game.unlocked_doors[door_key] {
+			game.world[CENTRE - 1][TILES_SIZE - 1] = .LOCKED_DOOR
+			game.world[CENTRE][TILES_SIZE - 1] = .LOCKED_DOOR
+		}
+	}
+}
+
+place_strategic_doors_and_keys :: proc() {
+	find_reachable_rooms :: proc() -> map[[2]i32]bool {
+		reachable := make(map[[2]i32]bool)
+		start_coords := [2]i32{-1, -1}
+
+		for y in 0 ..< FLOOR_SIZE {
+			for x in 0 ..< FLOOR_SIZE {
+				if game.floor_layout[y][x].is_start {
+					start_coords = {i32(x), i32(y)}
+					break
+				}
+			}
+		}
+
+		if start_coords.x == -1 do return reachable
+
+		queue := [dynamic][2]i32{}
+		defer delete(queue)
+
+		append(&queue, start_coords)
+		reachable[start_coords] = true
+
+		for len(queue) > 0 {
+			current := queue[0]
+			ordered_remove(&queue, 0)
+
+			room := &game.floor_layout[current.y][current.x]
+
+			directions := [4]Direction{.NORTH, .SOUTH, .EAST, .WEST}
+			deltas := [4][2]i32{{0, -1}, {0, 1}, {1, 0}, {-1, 0}}
+
+			for i in 0 ..< 4 {
+				if !room.connections[directions[i]] do continue
+				if room.locked_exits[directions[i]] do continue
+
+				next_coord := current + deltas[i]
+				if next_coord.x < 0 || next_coord.x >= FLOOR_SIZE || next_coord.y < 0 || next_coord.y >= FLOOR_SIZE do continue
+
+				if !reachable[next_coord] {
+					reachable[next_coord] = true
+					append(&queue, next_coord)
+				}
+			}
+		}
+		return reachable
+	}
+
+	reachable := find_reachable_rooms()
+	defer delete(reachable)
+
+	keys_to_place := 2
+	keys_placed := 0
+
+	for y in 0 ..< FLOOR_SIZE {
+		for x in 0 ..< FLOOR_SIZE {
+			coord := [2]i32{i32(x), i32(y)}
+			room := &game.floor_layout[y][x]
+			if reachable[coord] && !room.is_start && !room.is_end && keys_placed < keys_to_place {
+				room.has_key = true
+				keys_placed += 1
+			}
+		}
+	}
+
+	if keys_placed == 0 do return
+
+	all_connections := [dynamic][4]i32{}
+	defer delete(all_connections)
+
+	for y in 0 ..< FLOOR_SIZE {
+		for x in 0 ..< FLOOR_SIZE {
+			room := &game.floor_layout[y][x]
+			if room.connections[.EAST] && x < FLOOR_SIZE - 1 {
+				neighbor := &game.floor_layout[y][x + 1]
+				if !room.is_start && !neighbor.is_start {
+					append(&all_connections, [4]i32{i32(x), i32(y), i32(x + 1), i32(y)})
+				}
+			}
+			if room.connections[.SOUTH] && y < FLOOR_SIZE - 1 {
+				neighbor := &game.floor_layout[y + 1][x]
+				if !room.is_start && !neighbor.is_start {
+					append(&all_connections, [4]i32{i32(x), i32(y), i32(x), i32(y + 1)})
+				}
+			}
+		}
+	}
+
+	max_doors := min(keys_placed, len(all_connections))
+	doors_placed := 0
+
+	for doors_placed < max_doors && len(all_connections) > 0 {
+		connection_idx := rand.int31() % i32(len(all_connections))
+		connection := all_connections[connection_idx]
+		ordered_remove(&all_connections, int(connection_idx))
+
+		room1 := &game.floor_layout[connection[1]][connection[0]]
+		room2 := &game.floor_layout[connection[3]][connection[2]]
+
+		if connection[0] == connection[2] {
+			room1.locked_exits[.SOUTH] = true
+			room2.locked_exits[.NORTH] = true
+		} else {
+			room1.locked_exits[.EAST] = true
+			room2.locked_exits[.WEST] = true
+		}
+
+		doors_placed += 1
 	}
 }
 
