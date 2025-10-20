@@ -288,6 +288,7 @@ update_player :: proc() {
 			door_direction := get_door_direction(new_x, new_y)
 			if door_direction != -1 {
 				unlock_door_connection(Direction(door_direction))
+				add_screen_shake(15)
 			}
 
 			update_following_items(game.player.x, game.player.y)

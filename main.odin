@@ -176,6 +176,7 @@ update_dust :: proc() {
 		game.battle_grid.screen_shake = max(0, game.battle_grid.screen_shake - 8)
 	}
 
+	game.battle_grid.screen_shake = max(0, game.battle_grid.screen_shake - 8)
 }
 
 main :: proc() {
@@ -231,7 +232,7 @@ main :: proc() {
 
 		shake_x := f32(0)
 		shake_y := f32(0)
-		if game.state == .BATTLE && game.battle_grid.screen_shake > 0 {
+		if game.battle_grid.screen_shake > 0 {
 			shake_x = (f32(rand.int31() % 5) - 2) * f32(game.battle_grid.screen_shake)
 			shake_y = (f32(rand.int31() % 5) - 2) * f32(game.battle_grid.screen_shake)
 		}
