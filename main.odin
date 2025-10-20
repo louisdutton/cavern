@@ -11,8 +11,8 @@ CENTRE :: TILES_SIZE / 2
 TILE_COUNT :: TILES_SIZE * TILES_SIZE
 FLOOR_SIZE :: 5
 
-MOVE_DELAY :: 0.1
-ENEMY_DELAY :: 0.3
+MOVE_DELAY :: 2
+ENEMY_DELAY :: 7
 
 CATPPUCCIN_BASE :: rl.Color{30, 30, 46, 255}
 CATPPUCCIN_SURFACE0 :: rl.Color{49, 50, 68, 255}
@@ -68,13 +68,13 @@ BattleEntity :: struct {
 	max_health: i32,
 	is_telegraphing: bool,
 	target_x, target_y: i32,
-	flash_timer: f32,
+	flash_timer: i32,
 }
 
 DamageIndicator :: struct {
 	x, y: i32,
-	life: f32,
-	max_life: f32,
+	life: i32,
+	max_life: i32,
 }
 
 BattleGrid :: struct {
@@ -83,7 +83,7 @@ BattleGrid :: struct {
 	turn: i32,
 	attack_indicators: [dynamic][2]i32,
 	damage_indicators: [dynamic]DamageIndicator,
-	screen_shake: f32,
+	screen_shake: i32,
 }
 
 Room :: struct {
@@ -102,10 +102,10 @@ Game :: struct {
 	world:          [TILES_SIZE][TILES_SIZE]Tile,
 	render_texture: rl.RenderTexture2D,
 	current_room:   i32,
-	move_timer:     f32,
+	move_timer:     i32,
 	enemies:        [dynamic]Enemy,
-	enemy_timer:    f32,
-	water_time:     f32,
+	enemy_timer:    i32,
+	water_time:     i32,
 	music:          rl.Music,
 	click_sound:    rl.Sound,
 	floor_layout:   [FLOOR_SIZE][FLOOR_SIZE]Room,
@@ -124,11 +124,11 @@ game: Game
 spawn_damage_indicator :: proc(x, y: i32) {
 	append(
 		&game.battle_grid.damage_indicators,
-		DamageIndicator{x = x, y = y, life = 0.3, max_life = 0.3},
+		DamageIndicator{x = x, y = y, life = 7, max_life = 7},
 	)
 }
 
-add_screen_shake :: proc(intensity: f32) {
+add_screen_shake :: proc(intensity: i32) {
 	game.battle_grid.screen_shake = max(game.battle_grid.screen_shake, intensity)
 }
 
@@ -160,22 +160,22 @@ init_game :: proc() {
 
 init_audio :: proc() {
 	rl.InitAudioDevice()
-	rl.SetMasterVolume(0.0)
+	// rl.SetMasterVolume(0.0)
 	game.music = rl.LoadMusicStream("res/music.mp3")
 	game.click_sound = rl.LoadSound("res/click.wav")
 	rl.PlayMusicStream(game.music)
 }
 
-update_dust :: proc(dt: f32) {
+update_dust :: proc() {
 	if game.state == .BATTLE {
 		for i := len(game.battle_grid.damage_indicators) - 1; i >= 0; i -= 1 {
-			game.battle_grid.damage_indicators[i].life -= dt
+			game.battle_grid.damage_indicators[i].life -= 1
 			if game.battle_grid.damage_indicators[i].life <= 0 {
 				ordered_remove(&game.battle_grid.damage_indicators, i)
 			}
 		}
 
-		game.battle_grid.screen_shake = max(0, game.battle_grid.screen_shake - dt * 8)
+		game.battle_grid.screen_shake = max(0, game.battle_grid.screen_shake - 8)
 	}
 
 }
@@ -189,15 +189,14 @@ main :: proc() {
 	init_game()
 
 	for !rl.WindowShouldClose() {
-		dt := rl.GetFrameTime()
 
 		rl.UpdateMusicStream(game.music)
 
 		if game.state == .EXPLORATION {
-			update_player(dt)
-			update_enemies(dt)
-			update_dust(dt)
-			game.water_time += dt
+			update_player()
+			update_enemies()
+			update_dust()
+			game.water_time += 1
 
 			if check_player_enemy_collision() {
 				continue
@@ -219,8 +218,8 @@ main :: proc() {
 			draw_player()
 			rl.EndTextureMode()
 		} else if game.state == .BATTLE {
-			update_battle(dt)
-			update_dust(dt)
+			update_battle()
+			update_dust()
 
 			rl.BeginTextureMode(game.render_texture)
 			rl.ClearBackground(CATPPUCCIN_BASE)
@@ -235,8 +234,8 @@ main :: proc() {
 		shake_x := f32(0)
 		shake_y := f32(0)
 		if game.state == .BATTLE && game.battle_grid.screen_shake > 0 {
-			shake_x = (f32(rand.int31() % 5) - 2) * game.battle_grid.screen_shake
-			shake_y = (f32(rand.int31() % 5) - 2) * game.battle_grid.screen_shake
+			shake_x = (f32(rand.int31() % 5) - 2) * f32(game.battle_grid.screen_shake)
+			shake_y = (f32(rand.int31() % 5) - 2) * f32(game.battle_grid.screen_shake)
 		}
 
 		dest_rect := rl.Rectangle{shake_x, shake_y, WINDOW_SIZE, WINDOW_SIZE}

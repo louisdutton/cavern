@@ -75,7 +75,7 @@ update_enemy_ai :: proc(enemy: ^BattleEntity) {
 		if target != nil && target.is_player {
 			target.health -= 1
 			spawn_damage_indicator(enemy.target_x, enemy.target_y)
-			add_screen_shake(0.6)
+			add_screen_shake(14)
 
 			rl.SetSoundPitch(game.click_sound, 0.6)
 			rl.PlaySound(game.click_sound)
@@ -129,17 +129,17 @@ update_enemy_ai :: proc(enemy: ^BattleEntity) {
 	}
 }
 
-update_battle :: proc(dt: f32) {
+update_battle :: proc() {
 	for &entity in game.battle_grid.entities {
 		if entity.flash_timer > 0 {
-			entity.flash_timer -= dt
+			entity.flash_timer -= 1
 			if entity.flash_timer < 0 {
 				entity.flash_timer = 0
 			}
 		}
 	}
 
-	game.move_timer -= dt
+	game.move_timer -= 1
 	if game.move_timer > 0 do return
 
 	player_entity := get_battle_entity_at(-1, -1)
@@ -177,9 +177,9 @@ update_battle :: proc(dt: f32) {
 	target := get_battle_entity_at(new_x, new_y)
 	if target != nil && !target.is_player {
 		target.health -= 1
-		target.flash_timer = 0.1
+		target.flash_timer = 2
 		spawn_damage_indicator(target.x, target.y)
-		add_screen_shake(0.8)
+		add_screen_shake(19)
 
 		rl.SetSoundPitch(game.click_sound, 1.2 + f32(rand.int31() % 3) * 0.1)
 		rl.PlaySound(game.click_sound)

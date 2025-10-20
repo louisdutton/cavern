@@ -224,8 +224,8 @@ unlock_door_connection :: proc(direction: Direction) {
 	}
 }
 
-update_player :: proc(dt: f32) {
-	game.move_timer -= dt
+update_player :: proc() {
+	game.move_timer -= 1
 
 	if game.move_timer > 0 do return
 
@@ -309,8 +309,8 @@ update_player :: proc(dt: f32) {
 	load_current_room()
 }
 
-update_enemies :: proc(dt: f32) {
-	game.enemy_timer -= dt
+update_enemies :: proc() {
+	game.enemy_timer -= 1
 	if game.enemy_timer > 0 do return
 
 	for &enemy in game.enemies {
