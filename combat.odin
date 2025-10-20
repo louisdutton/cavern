@@ -41,6 +41,9 @@ end_battle :: proc() {
 		}
 	}
 
+	current_room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
+	current_room.has_enemies = false
+
 	clear(&game.battle_grid.entities)
 	clear(&game.battle_grid.attack_indicators)
 	clear(&game.battle_grid.damage_indicators)

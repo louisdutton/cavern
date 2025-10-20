@@ -114,7 +114,6 @@ Game :: struct {
 	battle_grid:    BattleGrid,
 	floor_number:   i32,
 	following_items: [dynamic]FollowingItem,
-	collected_keys: map[i32]bool,
 	unlocked_doors: map[[3]i32]bool,
 }
 
@@ -145,7 +144,6 @@ init_game :: proc() {
 	game.water_time = 0
 	game.enemies = make([dynamic]Enemy)
 	game.following_items = make([dynamic]FollowingItem)
-	game.collected_keys = make(map[i32]bool)
 	game.unlocked_doors = make(map[[3]i32]bool)
 	game.state = .EXPLORATION
 	game.battle_grid.entities = make([dynamic]BattleEntity)

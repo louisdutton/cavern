@@ -163,7 +163,7 @@ load_current_room :: proc() {
 		}
 	}
 
-	if room.has_key && !game.collected_keys[room.id] {
+	if room.has_key {
 		key_x := CENTRE - 2 + (room.id % 3)
 		key_y := CENTRE - 1 + (room.id % 2)
 		game.world[key_y][key_x] = .KEY
@@ -269,7 +269,7 @@ update_player :: proc() {
 				game.world[new_y][new_x] = .GRASS
 				append(&game.following_items, FollowingItem{x = new_x, y = new_y, target_x = game.player.x, target_y = game.player.y})
 				current_room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
-				game.collected_keys[current_room.id] = true
+				current_room.has_key = false
 			}
 
 			update_following_items(game.player.x, game.player.y)
