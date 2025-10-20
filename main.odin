@@ -27,6 +27,11 @@ Player :: struct {
 	x, y: i32,
 }
 
+FollowingItem :: struct {
+	x, y: i32,
+	target_x, target_y: i32,
+}
+
 Enemy :: struct {
 	x, y:             i32,
 	direction:        i32,
@@ -45,6 +50,7 @@ Tile :: enum {
 	STONE,
 	WATER,
 	EXIT,
+	KEY,
 }
 
 Direction :: enum {
@@ -110,6 +116,7 @@ Game :: struct {
 	state:          GameState,
 	battle_grid:    BattleGrid,
 	floor_number:   i32,
+	following_items: [dynamic]FollowingItem,
 }
 
 game: Game
@@ -145,6 +152,7 @@ init_game :: proc() {
 	game.water_time = 0
 	game.enemies = make([dynamic]Enemy)
 	game.dust_particles = make([dynamic]DustParticle)
+	game.following_items = make([dynamic]FollowingItem)
 	game.state = .EXPLORATION
 	game.battle_grid.entities = make([dynamic]BattleEntity)
 	game.battle_grid.attack_indicators = make([dynamic][2]i32)
@@ -220,6 +228,7 @@ main :: proc() {
 			draw_floor_number()
 			draw_dust()
 			draw_enemies()
+			draw_following_items()
 			draw_player()
 			rl.EndTextureMode()
 		} else if game.state == .BATTLE {

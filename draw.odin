@@ -48,6 +48,7 @@ draw_world :: proc() {
 					sprite = &water_sprite_b
 				}
 			case .EXIT: sprite = &exit_sprite
+			case .KEY: sprite = &key_sprite
 			}
 
 			draw_sprite(sprite, tile_x, tile_y)
@@ -66,6 +67,14 @@ draw_enemies :: proc() {
 		pixel_x := enemy.x * TILE_SIZE
 		pixel_y := enemy.y * TILE_SIZE
 		draw_sprite(&enemy_sprite, pixel_x, pixel_y, 0)
+	}
+}
+
+draw_following_items :: proc() {
+	for item in game.following_items {
+		pixel_x := item.x * TILE_SIZE
+		pixel_y := item.y * TILE_SIZE
+		draw_sprite(&key_sprite, pixel_x, pixel_y, 0)
 	}
 }
 
