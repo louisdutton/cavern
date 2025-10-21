@@ -14,7 +14,7 @@ load_current_room :: proc() {
 		}
 	}
 
-	if !room.is_start && !room.is_end && !room.enemies_defeated && rand.int31() % 3 == 0 {
+	if !room.is_start && !room.is_end && !room.is_title && !room.is_options && !room.enemies_defeated && rand.int31() % 3 == 0 {
 		enemy_count := 2 + (room.id % 3)
 		for _ in 0 ..< enemy_count {
 			enemy_x := rand.int31() % ROOM_SIZE
@@ -45,6 +45,8 @@ load_current_room :: proc() {
 		}
 	}
 
-	place_locked_doors_at_exits(room)
+	if !room.is_title && !room.is_options {
+		place_locked_doors_at_exits(room)
+	}
 }
 

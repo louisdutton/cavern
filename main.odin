@@ -101,6 +101,8 @@ Room :: struct {
 	locked_exits:    [Direction]bool,
 	is_start:        bool,
 	is_end:          bool,
+	is_title:        bool,
+	is_options:      bool,
 	enemies_defeated: bool,
 	tiles:           [ROOM_SIZE][ROOM_SIZE]Tile,
 }
@@ -155,6 +157,7 @@ init_game :: proc() {
 	game.battle_grid.entities = make([dynamic]BattleEntity)
 	game.battle_grid.attack_indicators = make([dynamic][2]i32)
 	game.battle_grid.damage_indicators = make([dynamic]DamageIndicator)
+
 	if game.floor_number == 0 {
 		game.floor_number = 1
 	}
@@ -210,7 +213,11 @@ main :: proc() {
 			}
 
 			room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
-			if room.is_end && game.player.x == ROOM_CENTRE && game.player.y == ROOM_CENTRE {
+			if room.is_start && game.player.x == ROOM_CENTRE && game.player.y == ROOM_CENTRE && game.floor_number == 1 {
+				game.floor_number = 2
+				init_game()
+				continue
+			} else if room.is_end && game.player.x == ROOM_CENTRE && game.player.y == ROOM_CENTRE {
 				game.floor_number += 1
 				init_game()
 				continue

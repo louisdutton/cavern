@@ -25,12 +25,35 @@ generate_floor :: proc() {
 		}
 	}
 
-	start_x := rand.int31() % FLOOR_SIZE
-	start_y := rand.int31() % FLOOR_SIZE
-	game.floor_layout[start_y][start_x].is_start = true
+	start_x, start_y: i32
+	if game.floor_number == 1 {
+		title_x: i32 = 1
+		title_y: i32 = 1
+		options_x: i32 = 2
+		options_y: i32 = 1
+		start_x = title_x
+		start_y = title_y + 1
+
+		game.floor_layout[title_y][title_x].is_title = true
+		game.floor_layout[options_y][options_x].is_options = true
+		game.floor_layout[start_y][start_x].is_start = true
+
+		game.floor_layout[title_y][title_x].connections[.SOUTH] = true
+		game.floor_layout[title_y][title_x].connections[.EAST] = true
+		game.floor_layout[options_y][options_x].connections[.WEST] = true
+		game.floor_layout[start_y][start_x].connections[.NORTH] = true
+	} else {
+		start_x = rand.int31() % FLOOR_SIZE
+		start_y = rand.int31() % FLOOR_SIZE
+		game.floor_layout[start_y][start_x].is_start = true
+	}
 
 	current_x, current_y := start_x, start_y
 	visited[current_y][current_x] = true
+	if game.floor_number == 1 {
+		visited[1][1] = true
+		visited[1][2] = true
+	}
 	append(&stack, Vec2{current_x, current_y})
 
 	for len(stack) > 0 {
@@ -100,8 +123,13 @@ generate_floor :: proc() {
 
 	place_secret_walls()
 
-	game.room_coords = {start_x, start_y}
+	if game.floor_number == 1 {
+		game.room_coords = {1, 1}
+	} else {
+		game.room_coords = {start_x, start_y}
+	}
 }
+
 
 place_strategic_doors_and_keys :: proc() {
 	find_reachable_rooms :: proc() -> map[[2]i32]bool {
@@ -249,7 +277,9 @@ generate_room_tiles :: proc(room: ^Room) {
 
 	if room.is_end {
 		room.tiles[ROOM_CENTRE][ROOM_CENTRE] = .EXIT
-	} else if !room.is_start {
+	} else if room.is_start && game.floor_number == 1 {
+		room.tiles[ROOM_CENTRE][ROOM_CENTRE] = .EXIT
+	} else if !room.is_start && !room.is_title && !room.is_options {
 		boulder_count := 2 + (room.id % 3)
 		for _ in 0 ..< boulder_count {
 			boulder_x := 1 + rand.int31() % (ROOM_SIZE - 2)
