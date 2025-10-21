@@ -116,21 +116,37 @@ draw_floor_number :: proc() {
 		}
 	}
 
-	start_x := ROOM_CENTRE - i32(floor_len) * 2
-	start_y := ROOM_CENTRE - 2
+	digit_width := 8
+	digit_height := 8
+	total_width := floor_len * digit_width
+	start_x := ROOM_CENTRE - total_width / 2
+	start_y := ROOM_CENTRE - digit_height / 2
+
+	low_alpha_white := rl.Fade(rl.WHITE, 0.05)
 
 	for i in 0 ..< floor_len {
 		digit := floor_str[i]
-		digit_x := start_x + i32(i) * 5
+		digit_x := start_x + i * digit_width
 		digit_y := start_y
 
-		if digit_x >= 1 &&
-		   digit_x + 3 < ROOM_SIZE - 1 &&
-		   digit_y >= 1 &&
-		   digit_y + 3 < ROOM_SIZE - 1 {
-			pixel_x := digit_x * TILE_SIZE
-			pixel_y := digit_y * TILE_SIZE
-			draw_sprite(&digit_sprites[digit], pixel_x, i32(pixel_y), 0)
+		for py in 0 ..< digit_height {
+			for px in 0 ..< digit_width {
+				sprite_x := px * TILE_SIZE / digit_width
+				sprite_y := py * TILE_SIZE / digit_height
+
+				if sprite_x < TILE_SIZE && sprite_y < TILE_SIZE {
+					color_index := digit_sprites[digit][sprite_y][sprite_x]
+					if color_index != 0 {
+						for tile_py in 0 ..< TILE_SIZE {
+							for tile_px in 0 ..< TILE_SIZE {
+								pixel_x := i32((digit_x + px) * TILE_SIZE + tile_px)
+								pixel_y := i32((digit_y + py) * TILE_SIZE + tile_py)
+								rl.DrawPixel(pixel_x, pixel_y, low_alpha_white)
+							}
+						}
+					}
+				}
+			}
 		}
 	}
 }
