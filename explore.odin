@@ -1,11 +1,16 @@
 package main
 
+import "core:math/rand"
 import rl "vendor:raylib"
 
 
 is_tile_walkable :: proc(x, y: i32) -> bool {
 	assert(x < ROOM_SIZE && y < ROOM_SIZE)
-	return game.world[y][x] != .STONE && game.world[y][x] != .LOCKED_DOOR && game.world[y][x] != .BOULDER
+	return(
+		game.world[y][x] != .STONE &&
+		game.world[y][x] != .LOCKED_DOOR &&
+		game.world[y][x] != .BOULDER \
+	)
 }
 
 can_unlock_door :: proc(x, y: i32) -> bool {
@@ -18,7 +23,10 @@ can_push_boulder :: proc(boulder_x, boulder_y, push_dir_x, push_dir_y: i32) -> b
 	new_boulder_x := boulder_x + push_dir_x
 	new_boulder_y := boulder_y + push_dir_y
 
-	if new_boulder_x < 0 || new_boulder_x >= ROOM_SIZE || new_boulder_y < 0 || new_boulder_y >= ROOM_SIZE {
+	if new_boulder_x < 0 ||
+	   new_boulder_x >= ROOM_SIZE ||
+	   new_boulder_y < 0 ||
+	   new_boulder_y >= ROOM_SIZE {
 		return false
 	}
 
@@ -33,10 +41,6 @@ push_boulder :: proc(boulder_x, boulder_y, push_dir_x, push_dir_y: i32) {
 
 	game.world[boulder_y][boulder_x] = .GRASS
 	game.world[new_boulder_y][new_boulder_x] = .BOULDER
-
-	current_room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
-	current_room.tiles[boulder_y][boulder_x] = .GRASS
-	current_room.tiles[new_boulder_y][new_boulder_x] = .BOULDER
 }
 
 get_door_direction :: proc(x, y: i32) -> i32 {
@@ -62,6 +66,9 @@ unlock_door_connection :: proc(direction: Direction) {
 				i32(Direction.SOUTH),
 			}
 			game.unlocked_doors[neighbor_door_key] = true
+			neighbor_room := &game.floor_layout[game.room_coords.y - 1][game.room_coords.x]
+			neighbor_room.tiles[ROOM_SIZE - 1][ROOM_CENTRE - 1] = .GRASS
+			neighbor_room.tiles[ROOM_SIZE - 1][ROOM_CENTRE] = .GRASS
 		}
 	case .SOUTH:
 		game.world[ROOM_SIZE - 1][ROOM_CENTRE - 1] = .GRASS
@@ -73,6 +80,9 @@ unlock_door_connection :: proc(direction: Direction) {
 				i32(Direction.NORTH),
 			}
 			game.unlocked_doors[neighbor_door_key] = true
+			neighbor_room := &game.floor_layout[game.room_coords.y + 1][game.room_coords.x]
+			neighbor_room.tiles[0][ROOM_CENTRE - 1] = .GRASS
+			neighbor_room.tiles[0][ROOM_CENTRE] = .GRASS
 		}
 	case .WEST:
 		game.world[ROOM_CENTRE - 1][0] = .GRASS
@@ -84,6 +94,9 @@ unlock_door_connection :: proc(direction: Direction) {
 				i32(Direction.EAST),
 			}
 			game.unlocked_doors[neighbor_door_key] = true
+			neighbor_room := &game.floor_layout[game.room_coords.y][game.room_coords.x - 1]
+			neighbor_room.tiles[ROOM_CENTRE - 1][ROOM_SIZE - 1] = .GRASS
+			neighbor_room.tiles[ROOM_CENTRE][ROOM_SIZE - 1] = .GRASS
 		}
 	case .EAST:
 		game.world[ROOM_CENTRE - 1][ROOM_SIZE - 1] = .GRASS
@@ -95,6 +108,9 @@ unlock_door_connection :: proc(direction: Direction) {
 				i32(Direction.WEST),
 			}
 			game.unlocked_doors[neighbor_door_key] = true
+			neighbor_room := &game.floor_layout[game.room_coords.y][game.room_coords.x + 1]
+			neighbor_room.tiles[ROOM_CENTRE - 1][0] = .GRASS
+			neighbor_room.tiles[ROOM_CENTRE][0] = .GRASS
 		}
 	}
 }
@@ -151,8 +167,6 @@ update_player :: proc() {
 						target_y = game.player.y,
 					},
 				)
-				current_room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
-				current_room.tiles[new_y][new_x] = .GRASS
 			}
 
 			update_following_items(game.player.x, game.player.y)
@@ -238,17 +252,27 @@ update_enemies :: proc() {
 	game.enemy_timer -= 1
 	if game.enemy_timer > 0 do return
 
-	for &enemy in game.enemies {
+	for y in 0 ..< ROOM_SIZE {
+		for x in 0 ..< ROOM_SIZE {
+			if game.world[y][x] == .ENEMY {
+				new_x, new_y := i32(x), i32(y)
 
-		if enemy.axis == 0 {
-			enemy.x += enemy.direction
-			if enemy.x <= enemy.min_pos || enemy.x >= enemy.max_pos {
-				enemy.direction *= -1
-			}
-		} else {
-			enemy.y += enemy.direction
-			if enemy.y <= enemy.min_pos || enemy.y >= enemy.max_pos {
-				enemy.direction *= -1
+				if rand.int31() % 2 == 0 {
+					if rand.int31() % 2 == 0 {
+						new_x += (rand.int31() % 2) * 2 - 1
+					} else {
+						new_y += (rand.int31() % 2) * 2 - 1
+					}
+				}
+
+				if new_x >= 1 &&
+				   new_x < ROOM_SIZE - 1 &&
+				   new_y >= 1 &&
+				   new_y < ROOM_SIZE - 1 &&
+				   game.world[new_y][new_x] == .GRASS {
+					game.world[y][x] = .GRASS
+					game.world[new_y][new_x] = .ENEMY
+				}
 			}
 		}
 	}
@@ -257,48 +281,14 @@ update_enemies :: proc() {
 }
 
 check_player_enemy_collision :: proc() -> bool {
-	for enemy in game.enemies {
-		if game.player.x == enemy.x && game.player.y == enemy.y {
-			init_battle(enemy.x, enemy.y)
-			return true
-		}
+	if game.world[game.player.y][game.player.x] == .ENEMY {
+		init_battle(game.player.x, game.player.y)
+		return true
 	}
 	return false
 }
 
 
-place_locked_doors_at_exits :: proc(room: ^Room) {
-	door_key := [3]i32{game.room_coords.x, game.room_coords.y, 0}
-
-	if room.locked_exits[.NORTH] {
-		door_key.z = i32(Direction.NORTH)
-		if !game.unlocked_doors[door_key] {
-			game.world[0][ROOM_CENTRE - 1] = .LOCKED_DOOR
-			game.world[0][ROOM_CENTRE] = .LOCKED_DOOR
-		}
-	}
-	if room.locked_exits[.SOUTH] {
-		door_key.z = i32(Direction.SOUTH)
-		if !game.unlocked_doors[door_key] {
-			game.world[ROOM_SIZE - 1][ROOM_CENTRE - 1] = .LOCKED_DOOR
-			game.world[ROOM_SIZE - 1][ROOM_CENTRE] = .LOCKED_DOOR
-		}
-	}
-	if room.locked_exits[.WEST] {
-		door_key.z = i32(Direction.WEST)
-		if !game.unlocked_doors[door_key] {
-			game.world[ROOM_CENTRE - 1][0] = .LOCKED_DOOR
-			game.world[ROOM_CENTRE][0] = .LOCKED_DOOR
-		}
-	}
-	if room.locked_exits[.EAST] {
-		door_key.z = i32(Direction.EAST)
-		if !game.unlocked_doors[door_key] {
-			game.world[ROOM_CENTRE - 1][ROOM_SIZE - 1] = .LOCKED_DOOR
-			game.world[ROOM_CENTRE][ROOM_SIZE - 1] = .LOCKED_DOOR
-		}
-	}
-}
 
 
 update_following_items :: proc(player_x, player_y: i32) {

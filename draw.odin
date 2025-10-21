@@ -45,18 +45,23 @@ draw_world :: proc() {
 			tile_x := i32(x * TILE_SIZE)
 			tile_y := i32(y * TILE_SIZE)
 
+			draw_sprite(&grass_sprite, tile_x, tile_y)
+
 			sprite: ^Sprite
 			switch game.world[y][x] {
-			case .GRASS: sprite = &grass_sprite
+			case .GRASS:
 			case .STONE: sprite = &stone_sprite
 			case .BOULDER: sprite = &boulder_sprite
 			case .EXIT: sprite = &exit_sprite
 			case .KEY: sprite = &key_sprite
 			case .LOCKED_DOOR: sprite = &locked_door_sprite
 			case .SECRET_WALL: sprite = &secret_wall_sprite
+			case .ENEMY: sprite = &enemy_sprite
 			}
 
-			draw_sprite(sprite, tile_x, tile_y)
+			if sprite != nil {
+				draw_sprite(sprite, tile_x, tile_y)
+			}
 		}
 	}
 }
@@ -67,13 +72,6 @@ draw_player :: proc() {
 	draw_sprite(&player_sprite, pixel_x, pixel_y, 0)
 }
 
-draw_enemies :: proc() {
-	for enemy in game.enemies {
-		pixel_x := enemy.x * TILE_SIZE
-		pixel_y := enemy.y * TILE_SIZE
-		draw_sprite(&enemy_sprite, pixel_x, pixel_y, 0)
-	}
-}
 
 draw_following_items :: proc() {
 	for item in game.following_items {
@@ -85,10 +83,8 @@ draw_following_items :: proc() {
 
 
 draw_floor_number :: proc() {
-	room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
-	if !room.is_start do return
-
-	floor_str := [16]u8{}
+	if game.floor_number == 1 && game.room_coords.x == 1 && game.room_coords.y == 1 {
+		floor_str := [16]u8{}
 	floor_len := 0
 	num := game.floor_number
 
@@ -142,6 +138,7 @@ draw_floor_number :: proc() {
 				}
 			}
 		}
+	}
 	}
 }
 

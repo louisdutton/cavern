@@ -36,15 +36,7 @@ end_battle :: proc() {
 
 	defeated_enemy_x, defeated_enemy_y := game.player.x, game.player.y
 
-	for i := len(game.enemies) - 1; i >= 0; i -= 1 {
-		if game.enemies[i].x == defeated_enemy_x && game.enemies[i].y == defeated_enemy_y {
-			ordered_remove(&game.enemies, i)
-			break
-		}
-	}
-
-	current_room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
-	current_room.enemies_defeated = true
+	game.world[defeated_enemy_y][defeated_enemy_x] = .GRASS
 
 	clear(&game.battle_grid.entities)
 	clear(&game.battle_grid.attack_indicators)

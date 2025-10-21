@@ -26,6 +26,8 @@ generate_floor :: proc() {
 	}
 
 	start_x, start_y: i32
+	end_x, end_y: i32
+
 	if game.floor_number == 1 {
 		title_x: i32 = 1
 		title_y: i32 = 1
@@ -34,10 +36,6 @@ generate_floor :: proc() {
 		start_x = title_x
 		start_y = title_y + 1
 
-		game.floor_layout[title_y][title_x].is_title = true
-		game.floor_layout[options_y][options_x].is_options = true
-		game.floor_layout[start_y][start_x].is_start = true
-
 		game.floor_layout[title_y][title_x].connections[.SOUTH] = true
 		game.floor_layout[title_y][title_x].connections[.EAST] = true
 		game.floor_layout[options_y][options_x].connections[.WEST] = true
@@ -45,7 +43,6 @@ generate_floor :: proc() {
 	} else {
 		start_x = rand.int31() % FLOOR_SIZE
 		start_y = rand.int31() % FLOOR_SIZE
-		game.floor_layout[start_y][start_x].is_start = true
 	}
 
 	current_x, current_y := start_x, start_y
@@ -103,21 +100,26 @@ generate_floor :: proc() {
 		current_x, current_y = next_x, next_y
 	}
 
-	end_x := rand.int31() % FLOOR_SIZE
-	end_y := rand.int31() % FLOOR_SIZE
-	for (end_x == start_x && end_y == start_y) || !visited[end_y][end_x] {
+	if game.floor_number > 1 {
 		end_x = rand.int31() % FLOOR_SIZE
 		end_y = rand.int31() % FLOOR_SIZE
+		for (end_x == start_x && end_y == start_y) || !visited[end_y][end_x] {
+			end_x = rand.int31() % FLOOR_SIZE
+			end_y = rand.int31() % FLOOR_SIZE
+		}
 	}
-	game.floor_layout[end_y][end_x].is_end = true
 
 
-	place_strategic_doors_and_keys()
+	place_strategic_doors_and_keys(start_x, start_y, end_x, end_y)
 
 	for y in 0 ..< FLOOR_SIZE {
 		for x in 0 ..< FLOOR_SIZE {
-			room := &game.floor_layout[y][x]
-			generate_room_tiles(room)
+			if visited[y][x] {
+				room := &game.floor_layout[y][x]
+				generate_room_tiles(room, i32(x), i32(y), start_x, start_y, end_x, end_y)
+				generate_room_enemies(room, i32(x), i32(y), start_x, start_y, end_x, end_y, visited[:])
+				place_room_locked_doors(room, i32(x), i32(y))
+			}
 		}
 	}
 
@@ -131,14 +133,14 @@ generate_floor :: proc() {
 }
 
 
-place_strategic_doors_and_keys :: proc() {
-	find_reachable_rooms :: proc() -> map[[2]i32]bool {
+place_strategic_doors_and_keys :: proc(start_x, start_y, end_x, end_y: i32) {
+	find_reachable_rooms :: proc(start_x, start_y: i32) -> map[[2]i32]bool {
 		reachable := make(map[[2]i32]bool)
 		start_coords := [2]i32{-1, -1}
 
 		for y in 0 ..< FLOOR_SIZE {
 			for x in 0 ..< FLOOR_SIZE {
-				if game.floor_layout[y][x].is_start {
+				if i32(x) == start_x && i32(y) == start_y {
 					start_coords = {i32(x), i32(y)}
 					break
 				}
@@ -178,7 +180,7 @@ place_strategic_doors_and_keys :: proc() {
 		return reachable
 	}
 
-	reachable := find_reachable_rooms()
+	reachable := find_reachable_rooms(start_x, start_y)
 	defer delete(reachable)
 
 	keys_to_place := 2
@@ -188,7 +190,9 @@ place_strategic_doors_and_keys :: proc() {
 		for x in 0 ..< FLOOR_SIZE {
 			coord := [2]i32{i32(x), i32(y)}
 			room := &game.floor_layout[y][x]
-			if reachable[coord] && !room.is_start && !room.is_end && keys_placed < keys_to_place {
+			is_start := i32(x) == start_x && i32(y) == start_y
+			is_end := game.floor_number > 1 && i32(x) == end_x && i32(y) == end_y
+			if reachable[coord] && !is_start && !is_end && keys_placed < keys_to_place {
 				key_x := ROOM_CENTRE - 2 + (room.id % 3)
 				key_y := ROOM_CENTRE - 1 + (room.id % 2)
 				room.tiles[key_y][key_x] = .KEY
@@ -206,14 +210,16 @@ place_strategic_doors_and_keys :: proc() {
 		for x in 0 ..< FLOOR_SIZE {
 			room := &game.floor_layout[y][x]
 			if room.connections[.EAST] && x < FLOOR_SIZE - 1 {
-				neighbor := &game.floor_layout[y][x + 1]
-				if !room.is_start && !neighbor.is_start {
+				room_is_start := i32(x) == start_x && i32(y) == start_y
+				neighbor_is_start := i32(x + 1) == start_x && i32(y) == start_y
+				if !room_is_start && !neighbor_is_start {
 					append(&all_connections, [4]i32{i32(x), i32(y), i32(x + 1), i32(y)})
 				}
 			}
 			if room.connections[.SOUTH] && y < FLOOR_SIZE - 1 {
-				neighbor := &game.floor_layout[y + 1][x]
-				if !room.is_start && !neighbor.is_start {
+				room_is_start := i32(x) == start_x && i32(y) == start_y
+				neighbor_is_start := i32(x) == start_x && i32(y + 1) == start_y
+				if !room_is_start && !neighbor_is_start {
 					append(&all_connections, [4]i32{i32(x), i32(y), i32(x), i32(y + 1)})
 				}
 			}
@@ -243,7 +249,7 @@ place_strategic_doors_and_keys :: proc() {
 	}
 }
 
-generate_room_tiles :: proc(room: ^Room) {
+generate_room_tiles :: proc(room: ^Room, room_x, room_y, start_x, start_y, end_x, end_y: i32) {
 	for y in 0 ..< ROOM_SIZE {
 		for x in 0 ..< ROOM_SIZE {
 			room.tiles[y][x] = .GRASS
@@ -275,11 +281,16 @@ generate_room_tiles :: proc(room: ^Room) {
 		room.tiles[ROOM_CENTRE][ROOM_SIZE - 1] = .GRASS
 	}
 
-	if room.is_end {
+	is_title := game.floor_number == 1 && room_x == 1 && room_y == 1
+	is_options := game.floor_number == 1 && room_x == 2 && room_y == 1
+	is_start := room_x == start_x && room_y == start_y
+	is_end := game.floor_number > 1 && room_x == end_x && room_y == end_y
+
+	if is_end {
 		room.tiles[ROOM_CENTRE][ROOM_CENTRE] = .EXIT
-	} else if room.is_start && game.floor_number == 1 {
+	} else if is_start && game.floor_number == 1 {
 		room.tiles[ROOM_CENTRE][ROOM_CENTRE] = .EXIT
-	} else if !room.is_start && !room.is_title && !room.is_options {
+	} else if !is_start && !is_title && !is_options {
 		boulder_count := 2 + (room.id % 3)
 		for _ in 0 ..< boulder_count {
 			boulder_x := 1 + rand.int31() % (ROOM_SIZE - 2)
@@ -290,6 +301,57 @@ generate_room_tiles :: proc(room: ^Room) {
 		}
 	}
 
+}
+
+generate_room_enemies :: proc(room: ^Room, room_x, room_y, start_x, start_y, end_x, end_y: i32, visited: [][FLOOR_SIZE]bool) {
+	is_title := game.floor_number == 1 && room_x == 1 && room_y == 1
+	is_options := game.floor_number == 1 && room_x == 2 && room_y == 1
+	is_start := room_x == start_x && room_y == start_y
+	is_end := game.floor_number > 1 && room_x == end_x && room_y == end_y
+
+	if !is_start && !is_end && !is_title && !is_options && rand.int31() % 3 == 0 {
+		enemy_count := 2 + (room.id % 3)
+		for _ in 0 ..< enemy_count {
+			enemy_x := 1 + rand.int31() % (ROOM_SIZE - 2)
+			enemy_y := 1 + rand.int31() % (ROOM_SIZE - 2)
+			if room.tiles[enemy_y][enemy_x] == .GRASS {
+				room.tiles[enemy_y][enemy_x] = .ENEMY
+			}
+		}
+	}
+}
+
+place_room_locked_doors :: proc(room: ^Room, room_x, room_y: i32) {
+	door_key := [3]i32{room_x, room_y, 0}
+
+	if room.locked_exits[.NORTH] {
+		door_key.z = i32(Direction.NORTH)
+		if !game.unlocked_doors[door_key] {
+			room.tiles[0][ROOM_CENTRE - 1] = .LOCKED_DOOR
+			room.tiles[0][ROOM_CENTRE] = .LOCKED_DOOR
+		}
+	}
+	if room.locked_exits[.SOUTH] {
+		door_key.z = i32(Direction.SOUTH)
+		if !game.unlocked_doors[door_key] {
+			room.tiles[ROOM_SIZE - 1][ROOM_CENTRE - 1] = .LOCKED_DOOR
+			room.tiles[ROOM_SIZE - 1][ROOM_CENTRE] = .LOCKED_DOOR
+		}
+	}
+	if room.locked_exits[.WEST] {
+		door_key.z = i32(Direction.WEST)
+		if !game.unlocked_doors[door_key] {
+			room.tiles[ROOM_CENTRE - 1][0] = .LOCKED_DOOR
+			room.tiles[ROOM_CENTRE][0] = .LOCKED_DOOR
+		}
+	}
+	if room.locked_exits[.EAST] {
+		door_key.z = i32(Direction.EAST)
+		if !game.unlocked_doors[door_key] {
+			room.tiles[ROOM_CENTRE - 1][ROOM_SIZE - 1] = .LOCKED_DOOR
+			room.tiles[ROOM_CENTRE][ROOM_SIZE - 1] = .LOCKED_DOOR
+		}
+	}
 }
 
 place_secret_walls :: proc() {

@@ -42,6 +42,7 @@ Tile :: enum {
 	KEY,
 	LOCKED_DOOR,
 	SECRET_WALL,
+	ENEMY,
 }
 
 Direction :: enum {
@@ -95,25 +96,19 @@ BattleGrid :: struct {
 }
 
 Room :: struct {
-	id:              i32,
-	x, y:            i32,
-	connections:     [Direction]bool,
-	locked_exits:    [Direction]bool,
-	is_start:        bool,
-	is_end:          bool,
-	is_title:        bool,
-	is_options:      bool,
-	enemies_defeated: bool,
-	tiles:           [ROOM_SIZE][ROOM_SIZE]Tile,
+	id:           i32,
+	x, y:         i32,
+	connections:  [Direction]bool,
+	locked_exits: [Direction]bool,
+	tiles:        [ROOM_SIZE][ROOM_SIZE]Tile,
 }
 
 Game :: struct {
 	player:          Player,
-	world:           [ROOM_SIZE][ROOM_SIZE]Tile,
+	world:           ^[ROOM_SIZE][ROOM_SIZE]Tile,
 	render_texture:  rl.RenderTexture2D,
 	current_room:    i32,
 	move_timer:      i32,
-	enemies:         [dynamic]Enemy,
 	enemy_timer:     i32,
 	music:           rl.Music,
 	sounds:          [SoundEffect]rl.Sound,
@@ -150,7 +145,6 @@ init_game :: proc() {
 	game.current_room = 0
 	game.move_timer = 0
 	game.enemy_timer = 0
-	game.enemies = make([dynamic]Enemy)
 	game.following_items = make([dynamic]FollowingItem)
 	game.unlocked_doors = make(map[[3]i32]bool)
 	game.state = .EXPLORATION
@@ -212,12 +206,7 @@ main :: proc() {
 				continue
 			}
 
-			room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
-			if room.is_start && game.player.x == ROOM_CENTRE && game.player.y == ROOM_CENTRE && game.floor_number == 1 {
-				game.floor_number = 2
-				init_game()
-				continue
-			} else if room.is_end && game.player.x == ROOM_CENTRE && game.player.y == ROOM_CENTRE {
+			if game.world[game.player.y][game.player.x] == .EXIT {
 				game.floor_number += 1
 				init_game()
 				continue
@@ -227,7 +216,6 @@ main :: proc() {
 			rl.ClearBackground(CATPPUCCIN_BASE)
 			draw_world()
 			draw_floor_number()
-			draw_enemies()
 			draw_following_items()
 			draw_player()
 			rl.EndTextureMode()
@@ -278,8 +266,7 @@ update :: proc() {
 
 		if check_player_enemy_collision() do return
 
-		room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
-		if room.is_end && game.player.x == ROOM_CENTRE && game.player.y == ROOM_CENTRE {
+		if game.world[game.player.y][game.player.x] == .EXIT {
 			game.floor_number += 1
 			init_game()
 			return
@@ -300,7 +287,6 @@ draw :: proc() {
 	case .EXPLORATION:
 		draw_world()
 		draw_floor_number()
-		draw_enemies()
 		draw_following_items()
 		draw_player()
 
