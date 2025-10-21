@@ -95,15 +95,14 @@ BattleGrid :: struct {
 }
 
 Room :: struct {
-	id:           i32,
-	x, y:         i32,
-	connections:  [Direction]bool,
-	locked_exits: [Direction]bool,
-	is_start:     bool,
-	is_end:       bool,
-	has_enemies:  bool,
-	has_key:      bool,
-	tiles:        [ROOM_SIZE][ROOM_SIZE]Tile,
+	id:              i32,
+	x, y:            i32,
+	connections:     [Direction]bool,
+	locked_exits:    [Direction]bool,
+	is_start:        bool,
+	is_end:          bool,
+	enemies_defeated: bool,
+	tiles:           [ROOM_SIZE][ROOM_SIZE]Tile,
 }
 
 Game :: struct {

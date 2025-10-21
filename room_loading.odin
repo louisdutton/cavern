@@ -14,8 +14,7 @@ load_current_room :: proc() {
 		}
 	}
 
-	// Generate enemies if room has them
-	if room.has_enemies {
+	if !room.is_start && !room.is_end && !room.enemies_defeated && rand.int31() % 3 == 0 {
 		enemy_count := 2 + (room.id % 3)
 		for _ in 0 ..< enemy_count {
 			enemy_x := rand.int31() % ROOM_SIZE

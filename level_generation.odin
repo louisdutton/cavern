@@ -88,15 +88,6 @@ generate_floor :: proc() {
 	}
 	game.floor_layout[end_y][end_x].is_end = true
 
-	for y in 0 ..< FLOOR_SIZE {
-		for x in 0 ..< FLOOR_SIZE {
-			if visited[y][x] &&
-			   !game.floor_layout[y][x].is_start &&
-			   !game.floor_layout[y][x].is_end {
-				game.floor_layout[y][x].has_enemies = rand.int31() % 3 == 0
-			}
-		}
-	}
 
 	place_strategic_doors_and_keys()
 
@@ -170,7 +161,9 @@ place_strategic_doors_and_keys :: proc() {
 			coord := [2]i32{i32(x), i32(y)}
 			room := &game.floor_layout[y][x]
 			if reachable[coord] && !room.is_start && !room.is_end && keys_placed < keys_to_place {
-				room.has_key = true
+				key_x := ROOM_CENTRE - 2 + (room.id % 3)
+				key_y := ROOM_CENTRE - 1 + (room.id % 2)
+				room.tiles[key_y][key_x] = .KEY
 				keys_placed += 1
 			}
 		}
@@ -267,11 +260,6 @@ generate_room_tiles :: proc(room: ^Room) {
 		}
 	}
 
-	if room.has_key {
-		key_x := ROOM_CENTRE - 2 + (room.id % 3)
-		key_y := ROOM_CENTRE - 1 + (room.id % 2)
-		room.tiles[key_y][key_x] = .KEY
-	}
 }
 
 place_secret_walls :: proc() {

@@ -34,15 +34,17 @@ init_battle :: proc(enemy_x, enemy_y: i32) {
 end_battle :: proc() {
 	game.state = .EXPLORATION
 
+	defeated_enemy_x, defeated_enemy_y := game.player.x, game.player.y
+
 	for i := len(game.enemies) - 1; i >= 0; i -= 1 {
-		if game.enemies[i].x == game.player.x && game.enemies[i].y == game.player.y {
+		if game.enemies[i].x == defeated_enemy_x && game.enemies[i].y == defeated_enemy_y {
 			ordered_remove(&game.enemies, i)
 			break
 		}
 	}
 
 	current_room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
-	current_room.has_enemies = false
+	current_room.enemies_defeated = true
 
 	clear(&game.battle_grid.entities)
 	clear(&game.battle_grid.attack_indicators)

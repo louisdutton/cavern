@@ -125,7 +125,7 @@ update_player :: proc() {
 					},
 				)
 				current_room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
-				current_room.has_key = false
+				current_room.tiles[new_y][new_x] = .GRASS
 			}
 
 			update_following_items(game.player.x, game.player.y)
