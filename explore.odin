@@ -5,6 +5,7 @@ import rl "vendor:raylib"
 
 
 is_tile_walkable :: proc(x, y: i32) -> bool {
+	assert(x < ROOM_SIZE && y < ROOM_SIZE)
 	return game.world[y][x] != .STONE && game.world[y][x] != .LOCKED_DOOR
 }
 
@@ -286,4 +287,3 @@ update_following_items :: proc(player_x, player_y: i32) {
 		prev_y = old_y
 	}
 }
-

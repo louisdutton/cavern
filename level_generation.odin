@@ -31,7 +31,7 @@ generate_floor :: proc() {
 
 	current_x, current_y := start_x, start_y
 	visited[current_y][current_x] = true
-	append(&stack, [2]i32{current_x, current_y})
+	append(&stack, Vec2{current_x, current_y})
 
 	for len(stack) > 0 {
 		neighbors := [dynamic][3]i32{}
@@ -61,7 +61,7 @@ generate_floor :: proc() {
 			continue
 		}
 
-		chosen := neighbors[rand.int31() % i32(len(neighbors))]
+		chosen := rand.choice(neighbors[:])
 		next_x, next_y, direction := chosen.x, chosen.y, Direction(chosen.z)
 
 		opposite_direction: Direction
@@ -76,7 +76,7 @@ generate_floor :: proc() {
 		game.floor_layout[next_y][next_x].connections[opposite_direction] = true
 
 		visited[next_y][next_x] = true
-		append(&stack, [2]i32{next_x, next_y})
+		append(&stack, Vec2{next_x, next_y})
 		current_x, current_y = next_x, next_y
 	}
 
@@ -103,9 +103,7 @@ generate_floor :: proc() {
 	for y in 0 ..< FLOOR_SIZE {
 		for x in 0 ..< FLOOR_SIZE {
 			room := &game.floor_layout[y][x]
-			if room.id != 0 {
-				generate_room_tiles(room)
-			}
+			generate_room_tiles(room)
 		}
 	}
 
@@ -231,17 +229,12 @@ generate_room_tiles :: proc(room: ^Room) {
 		}
 	}
 
-	for x in 0 ..< ROOM_SIZE {
-		room.tiles[0][x] = .STONE
-	}
-	for x in 0 ..< ROOM_SIZE {
-		room.tiles[ROOM_SIZE - 1][x] = .STONE
-	}
-	for y in 0 ..< ROOM_SIZE {
-		room.tiles[y][0] = .STONE
-	}
-	for y in 0 ..< ROOM_SIZE {
-		room.tiles[y][ROOM_SIZE - 1] = .STONE
+	// place walls
+	for i in 0 ..< ROOM_SIZE {
+		room.tiles[0][i] = .STONE
+		room.tiles[ROOM_SIZE - 1][i] = .STONE
+		room.tiles[i][0] = .STONE
+		room.tiles[i][ROOM_SIZE - 1] = .STONE
 	}
 
 	if room.connections[.NORTH] {
