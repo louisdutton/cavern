@@ -51,6 +51,18 @@ Direction :: enum {
 	WEST,
 }
 
+SoundEffect :: enum {
+	CLICK,
+	COLLECT,
+	DESTROY,
+	GROWL,
+	HURT,
+	LOCKED,
+	METAL,
+	PICKUP,
+	UNLOCK,
+}
+
 GameState :: enum {
 	EXPLORATION,
 	BATTLE,
@@ -104,7 +116,7 @@ Game :: struct {
 	enemy_timer:     i32,
 	water_time:      i32,
 	music:           rl.Music,
-	click_sound:     rl.Sound,
+	sounds:          [SoundEffect]rl.Sound,
 	floor_layout:    [FLOOR_SIZE][FLOOR_SIZE]Room,
 	room_coords:     [2]i32,
 	state:           GameState,
@@ -157,7 +169,9 @@ init_audio :: proc() {
 	rl.InitAudioDevice()
 	rl.SetMasterVolume(0.2)
 	game.music = rl.LoadMusicStream("res/music.mp3")
-	game.click_sound = rl.LoadSound("res/click.wav")
+	for sound_type in SoundEffect {
+		game.sounds[sound_type] = rl.LoadSound(sound_paths[sound_type])
+	}
 	rl.PlayMusicStream(game.music)
 }
 
@@ -244,7 +258,9 @@ main :: proc() {
 	}
 
 	rl.UnloadMusicStream(game.music)
-	rl.UnloadSound(game.click_sound)
+	for sound in game.sounds {
+		rl.UnloadSound(sound)
+	}
 	rl.CloseAudioDevice()
 	rl.UnloadRenderTexture(game.render_texture)
 	rl.CloseWindow()

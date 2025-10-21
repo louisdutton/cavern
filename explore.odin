@@ -1,6 +1,5 @@
 package main
 
-import "core:math/rand"
 import rl "vendor:raylib"
 
 
@@ -135,9 +134,7 @@ update_player :: proc() {
 			game.player.y = new_y
 			game.move_timer = MOVE_DELAY
 
-			pitch := 0.8 + f32((game.player.x + game.player.y) % 5) * 0.1
-			rl.SetSoundPitch(game.click_sound, pitch)
-			rl.PlaySound(game.click_sound)
+			play_sound(.CLICK)
 
 		} else if game.world[new_y][new_x] == .SECRET_WALL {
 			game.world[new_y][new_x] = .GRASS
@@ -165,9 +162,7 @@ update_player :: proc() {
 			}
 			game.move_timer = MOVE_DELAY
 
-			pitch := 1.0 + f32(rand.int31() % 3) * 0.2
-			rl.SetSoundPitch(game.click_sound, pitch)
-			rl.PlaySound(game.click_sound)
+			play_sound(.DESTROY)
 
 			if new_x == 0 || new_x == ROOM_SIZE - 1 || new_y == 0 || new_y == ROOM_SIZE - 1 {
 				load_current_room()
@@ -180,6 +175,8 @@ update_player :: proc() {
 			if door_direction != -1 {
 				unlock_door_connection(Direction(door_direction))
 				add_screen_shake(15)
+				play_sound(.UNLOCK)
+				play_sound(.DESTROY)
 			}
 
 			update_following_items(game.player.x, game.player.y)
@@ -187,11 +184,6 @@ update_player :: proc() {
 			game.player.x = new_x
 			game.player.y = new_y
 			game.move_timer = MOVE_DELAY
-
-			pitch := 0.8 + f32((game.player.x + game.player.y) % 5) * 0.1
-			rl.SetSoundPitch(game.click_sound, pitch)
-			rl.PlaySound(game.click_sound)
-
 		}
 		return
 	}

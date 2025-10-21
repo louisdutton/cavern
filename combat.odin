@@ -12,21 +12,21 @@ init_battle :: proc(enemy_x, enemy_y: i32) {
 	clear(&game.battle_grid.damage_indicators)
 	game.battle_grid.screen_shake = 0
 
-	append(&game.battle_grid.entities, BattleEntity{
-		x = 2, y = 6, is_player = true, health = 3, max_health = 3,
-	})
+	append(
+		&game.battle_grid.entities,
+		BattleEntity{x = 2, y = 6, is_player = true, health = 3, max_health = 3},
+	)
 
 	enemy_count := 2 + (len(game.enemies) % 3)
-	enemy_positions := [][2]i32{
-		{5, 1}, {1, 1}, {6, 2}, {0, 3}, {7, 4}, {3, 0}, {4, 7}, {6, 6},
-	}
+	enemy_positions := [][2]i32{{5, 1}, {1, 1}, {6, 2}, {0, 3}, {7, 4}, {3, 0}, {4, 7}, {6, 6}}
 
 	for i in 0 ..< enemy_count {
 		if i < len(enemy_positions) {
 			pos := enemy_positions[i]
-			append(&game.battle_grid.entities, BattleEntity{
-				x = pos.x, y = pos.y, is_player = false, health = 2, max_health = 2,
-			})
+			append(
+				&game.battle_grid.entities,
+				BattleEntity{x = pos.x, y = pos.y, is_player = false, health = 2, max_health = 2},
+			)
 		}
 	}
 }
@@ -80,8 +80,7 @@ update_enemy_ai :: proc(enemy: ^BattleEntity) {
 			spawn_damage_indicator(enemy.target_x, enemy.target_y)
 			add_screen_shake(14)
 
-			rl.SetSoundPitch(game.click_sound, 0.6)
-			rl.PlaySound(game.click_sound)
+			play_sound(.CLICK)
 		}
 		enemy.is_telegraphing = false
 
@@ -101,7 +100,10 @@ update_enemy_ai :: proc(enemy: ^BattleEntity) {
 				enemy.is_telegraphing = true
 				enemy.target_x = player_entity.x
 				enemy.target_y = player_entity.y
-				append(&game.battle_grid.attack_indicators, [2]i32{player_entity.x, player_entity.y})
+				append(
+					&game.battle_grid.attack_indicators,
+					[2]i32{player_entity.x, player_entity.y},
+				)
 				return
 			}
 		}
@@ -124,8 +126,9 @@ update_enemy_ai :: proc(enemy: ^BattleEntity) {
 				}
 			}
 
-			if is_battle_position_valid(new_x, new_y) && get_battle_entity_at(new_x, new_y) == nil {
-					enemy.x = new_x
+			if is_battle_position_valid(new_x, new_y) &&
+			   get_battle_entity_at(new_x, new_y) == nil {
+				enemy.x = new_x
 				enemy.y = new_y
 			}
 		}
@@ -184,8 +187,7 @@ update_battle :: proc() {
 		spawn_damage_indicator(target.x, target.y)
 		add_screen_shake(19)
 
-		rl.SetSoundPitch(game.click_sound, 1.2 + f32(rand.int31() % 3) * 0.1)
-		rl.PlaySound(game.click_sound)
+		play_sound(.HURT)
 
 		if target.health <= 0 {
 			for i := len(game.battle_grid.entities) - 1; i >= 0; i -= 1 {
@@ -204,9 +206,7 @@ update_battle :: proc() {
 		player_entity.y = new_y
 		game.move_timer = MOVE_DELAY
 
-		pitch := 0.8 + f32((player_entity.x + player_entity.y) % 5) * 0.1
-		rl.SetSoundPitch(game.click_sound, pitch)
-		rl.PlaySound(game.click_sound)
+		play_sound(.DESTROY)
 	}
 
 	enemy_count := 0
