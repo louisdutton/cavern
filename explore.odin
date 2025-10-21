@@ -5,11 +5,38 @@ import rl "vendor:raylib"
 
 is_tile_walkable :: proc(x, y: i32) -> bool {
 	assert(x < ROOM_SIZE && y < ROOM_SIZE)
-	return game.world[y][x] != .STONE && game.world[y][x] != .LOCKED_DOOR
+	return game.world[y][x] != .STONE && game.world[y][x] != .LOCKED_DOOR && game.world[y][x] != .BOULDER
 }
 
 can_unlock_door :: proc(x, y: i32) -> bool {
 	return game.world[y][x] == .LOCKED_DOOR && len(game.following_items) > 0
+}
+
+can_push_boulder :: proc(boulder_x, boulder_y, push_dir_x, push_dir_y: i32) -> bool {
+	if game.world[boulder_y][boulder_x] != .BOULDER do return false
+
+	new_boulder_x := boulder_x + push_dir_x
+	new_boulder_y := boulder_y + push_dir_y
+
+	if new_boulder_x < 0 || new_boulder_x >= ROOM_SIZE || new_boulder_y < 0 || new_boulder_y >= ROOM_SIZE {
+		return false
+	}
+
+	return game.world[new_boulder_y][new_boulder_x] == .GRASS
+}
+
+push_boulder :: proc(boulder_x, boulder_y, push_dir_x, push_dir_y: i32) {
+	if !can_push_boulder(boulder_x, boulder_y, push_dir_x, push_dir_y) do return
+
+	new_boulder_x := boulder_x + push_dir_x
+	new_boulder_y := boulder_y + push_dir_y
+
+	game.world[boulder_y][boulder_x] = .GRASS
+	game.world[new_boulder_y][new_boulder_x] = .BOULDER
+
+	current_room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
+	current_room.tiles[boulder_y][boulder_x] = .GRASS
+	current_room.tiles[new_boulder_y][new_boulder_x] = .BOULDER
 }
 
 get_door_direction :: proc(x, y: i32) -> i32 {
@@ -184,6 +211,20 @@ update_player :: proc() {
 			game.player.x = new_x
 			game.player.y = new_y
 			game.move_timer = MOVE_DELAY
+
+		} else if game.world[new_y][new_x] == .BOULDER {
+			push_dir_x := new_x - game.player.x
+			push_dir_y := new_y - game.player.y
+
+			if can_push_boulder(new_x, new_y, push_dir_x, push_dir_y) {
+				push_boulder(new_x, new_y, push_dir_x, push_dir_y)
+
+				game.player.x = new_x
+				game.player.y = new_y
+				game.move_timer = MOVE_DELAY
+
+				play_sound(.METAL)
+			}
 		}
 		return
 	}

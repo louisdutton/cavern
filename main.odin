@@ -37,7 +37,7 @@ Enemy :: struct {
 Tile :: enum {
 	GRASS,
 	STONE,
-	WATER,
+	BOULDER,
 	EXIT,
 	KEY,
 	LOCKED_DOOR,
@@ -113,7 +113,6 @@ Game :: struct {
 	move_timer:      i32,
 	enemies:         [dynamic]Enemy,
 	enemy_timer:     i32,
-	water_time:      i32,
 	music:           rl.Music,
 	sounds:          [SoundEffect]rl.Sound,
 	floor_layout:    [FLOOR_SIZE][FLOOR_SIZE]Room,
@@ -149,7 +148,6 @@ init_game :: proc() {
 	game.current_room = 0
 	game.move_timer = 0
 	game.enemy_timer = 0
-	game.water_time = 0
 	game.enemies = make([dynamic]Enemy)
 	game.following_items = make([dynamic]FollowingItem)
 	game.unlocked_doors = make(map[[3]i32]bool)
@@ -206,7 +204,6 @@ main :: proc() {
 			update_player()
 			update_enemies()
 			update_dust()
-			game.water_time += 1
 
 			if check_player_enemy_collision() {
 				continue
@@ -271,7 +268,6 @@ update :: proc() {
 		update_player()
 		update_enemies()
 		update_dust()
-		game.water_time += 1
 
 		if check_player_enemy_collision() do return
 

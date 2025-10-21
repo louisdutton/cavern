@@ -250,12 +250,12 @@ generate_room_tiles :: proc(room: ^Room) {
 	if room.is_end {
 		room.tiles[ROOM_CENTRE][ROOM_CENTRE] = .EXIT
 	} else if !room.is_start {
-		water_count := 2 + (room.id % 3)
-		for _ in 0 ..< water_count {
-			water_x := 1 + rand.int31() % (ROOM_SIZE - 2)
-			water_y := 1 + rand.int31() % (ROOM_SIZE - 2)
-			if room.tiles[water_y][water_x] == .GRASS {
-				room.tiles[water_y][water_x] = .WATER
+		boulder_count := 2 + (room.id % 3)
+		for _ in 0 ..< boulder_count {
+			boulder_x := 1 + rand.int31() % (ROOM_SIZE - 2)
+			boulder_y := 1 + rand.int31() % (ROOM_SIZE - 2)
+			if room.tiles[boulder_y][boulder_x] == .GRASS {
+				room.tiles[boulder_y][boulder_x] = .BOULDER
 			}
 		}
 	}

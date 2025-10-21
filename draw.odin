@@ -49,13 +49,7 @@ draw_world :: proc() {
 			switch game.world[y][x] {
 			case .GRASS: sprite = &grass_sprite
 			case .STONE: sprite = &stone_sprite
-			case .WATER:
-				wave_offset := i32(game.water_time * 4) % 2
-				if (i32(x) + i32(y) + wave_offset) % 2 == 0 {
-					sprite = &water_sprite_a
-				} else {
-					sprite = &water_sprite_b
-				}
+			case .BOULDER: sprite = &boulder_sprite
 			case .EXIT: sprite = &exit_sprite
 			case .KEY: sprite = &key_sprite
 			case .LOCKED_DOOR: sprite = &locked_door_sprite
