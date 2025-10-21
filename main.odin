@@ -6,11 +6,6 @@ import rl "vendor:raylib"
 GAME_SIZE :: 64
 WINDOW_SIZE :: 256
 
-TILES_SIZE :: 16
-CENTRE :: TILES_SIZE / 2
-TILE_COUNT :: TILES_SIZE * TILES_SIZE
-FLOOR_SIZE :: 5
-
 MOVE_DELAY :: 2
 ENEMY_DELAY :: 7
 
@@ -27,7 +22,7 @@ Player :: struct {
 }
 
 FollowingItem :: struct {
-	x, y: i32,
+	x, y:               i32,
 	target_x, target_y: i32,
 }
 
@@ -63,60 +58,60 @@ GameState :: enum {
 
 
 BattleEntity :: struct {
-	x, y: i32,
-	is_player: bool,
-	health: i32,
-	max_health: i32,
-	is_telegraphing: bool,
+	x, y:               i32,
+	is_player:          bool,
+	health:             i32,
+	max_health:         i32,
+	is_telegraphing:    bool,
 	target_x, target_y: i32,
-	flash_timer: i32,
+	flash_timer:        i32,
 }
 
 DamageIndicator :: struct {
-	x, y: i32,
-	life: i32,
+	x, y:     i32,
+	life:     i32,
 	max_life: i32,
 }
 
 BattleGrid :: struct {
-	size: i32,
-	entities: [dynamic]BattleEntity,
-	turn: i32,
+	size:              i32,
+	entities:          [dynamic]BattleEntity,
+	turn:              i32,
 	attack_indicators: [dynamic][2]i32,
 	damage_indicators: [dynamic]DamageIndicator,
-	screen_shake: i32,
+	screen_shake:      i32,
 }
 
 Room :: struct {
-	id:          i32,
-	x, y:        i32,
-	connections: [Direction]bool,
+	id:           i32,
+	x, y:         i32,
+	connections:  [Direction]bool,
 	locked_exits: [Direction]bool,
-	is_start:    bool,
-	is_end:      bool,
-	has_enemies: bool,
-	has_key:     bool,
-	tiles:       [TILES_SIZE][TILES_SIZE]Tile,
+	is_start:     bool,
+	is_end:       bool,
+	has_enemies:  bool,
+	has_key:      bool,
+	tiles:        [ROOM_SIZE][ROOM_SIZE]Tile,
 }
 
 Game :: struct {
-	player:         Player,
-	world:          [TILES_SIZE][TILES_SIZE]Tile,
-	render_texture: rl.RenderTexture2D,
-	current_room:   i32,
-	move_timer:     i32,
-	enemies:        [dynamic]Enemy,
-	enemy_timer:    i32,
-	water_time:     i32,
-	music:          rl.Music,
-	click_sound:    rl.Sound,
-	floor_layout:   [FLOOR_SIZE][FLOOR_SIZE]Room,
-	room_coords:    [2]i32,
-	state:          GameState,
-	battle_grid:    BattleGrid,
-	floor_number:   i32,
+	player:          Player,
+	world:           [ROOM_SIZE][ROOM_SIZE]Tile,
+	render_texture:  rl.RenderTexture2D,
+	current_room:    i32,
+	move_timer:      i32,
+	enemies:         [dynamic]Enemy,
+	enemy_timer:     i32,
+	water_time:      i32,
+	music:           rl.Music,
+	click_sound:     rl.Sound,
+	floor_layout:    [FLOOR_SIZE][FLOOR_SIZE]Room,
+	room_coords:     [2]i32,
+	state:           GameState,
+	battle_grid:     BattleGrid,
+	floor_number:    i32,
 	following_items: [dynamic]FollowingItem,
-	unlocked_doors: map[[3]i32]bool,
+	unlocked_doors:  map[[3]i32]bool,
 }
 
 game: Game
@@ -136,8 +131,8 @@ add_screen_shake :: proc(intensity: i32) {
 
 init_game :: proc() {
 	game.player = Player {
-		x = CENTRE,
-		y = CENTRE,
+		x = ROOM_CENTRE,
+		y = ROOM_CENTRE,
 	}
 	game.render_texture = rl.LoadRenderTexture(GAME_SIZE, GAME_SIZE)
 	game.current_room = 0
@@ -193,7 +188,8 @@ main :: proc() {
 
 		rl.UpdateMusicStream(game.music)
 
-		if game.state == .EXPLORATION {
+		switch game.state {
+		case .EXPLORATION:
 			update_player()
 			update_enemies()
 			update_dust()
@@ -204,7 +200,7 @@ main :: proc() {
 			}
 
 			room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
-			if room.is_end && game.player.x == CENTRE && game.player.y == CENTRE {
+			if room.is_end && game.player.x == ROOM_CENTRE && game.player.y == ROOM_CENTRE {
 				game.floor_number += 1
 				init_game()
 				continue
@@ -218,7 +214,8 @@ main :: proc() {
 			draw_following_items()
 			draw_player()
 			rl.EndTextureMode()
-		} else if game.state == .BATTLE {
+
+		case .BATTLE:
 			update_battle()
 			update_dust()
 
@@ -230,7 +227,6 @@ main :: proc() {
 		}
 
 		rl.BeginDrawing()
-		rl.ClearBackground(rl.BLACK)
 
 		shake_x := f32(0)
 		shake_y := f32(0)
@@ -252,4 +248,46 @@ main :: proc() {
 	rl.CloseAudioDevice()
 	rl.UnloadRenderTexture(game.render_texture)
 	rl.CloseWindow()
+}
+
+update :: proc() {
+	switch game.state {
+	case .EXPLORATION:
+		update_player()
+		update_enemies()
+		update_dust()
+		game.water_time += 1
+
+		if check_player_enemy_collision() do return
+
+		room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
+		if room.is_end && game.player.x == ROOM_CENTRE && game.player.y == ROOM_CENTRE {
+			game.floor_number += 1
+			init_game()
+			return
+		}
+
+	case .BATTLE:
+		update_battle()
+		update_dust()
+	}
+}
+
+draw :: proc() {
+	rl.BeginTextureMode(game.render_texture)
+	rl.ClearBackground(CATPPUCCIN_BASE)
+	defer rl.EndTextureMode()
+
+	switch game.state {
+	case .EXPLORATION:
+		draw_world()
+		draw_floor_number()
+		draw_enemies()
+		draw_following_items()
+		draw_player()
+
+	case .BATTLE:
+		draw_battle_grid()
+		draw_battle_entities()
+	}
 }

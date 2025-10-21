@@ -17,7 +17,12 @@ draw_sprite :: proc(sprite: ^Sprite, x, y: i32, transparent_index: u8 = 255) {
 	}
 }
 
-draw_battle_sprite :: proc(sprite: ^BattleSprite, x, y: i32, transparent_index: u8 = 255, flash_white: bool = false) {
+draw_battle_sprite :: proc(
+	sprite: ^BattleSprite,
+	x, y: i32,
+	transparent_index: u8 = 255,
+	flash_white: bool = false,
+) {
 	for py in 0 ..< 8 {
 		for px in 0 ..< 8 {
 			color_index := sprite[py][px]
@@ -35,8 +40,8 @@ draw_battle_sprite :: proc(sprite: ^BattleSprite, x, y: i32, transparent_index: 
 }
 
 draw_world :: proc() {
-	for y in 0 ..< TILES_SIZE {
-		for x in 0 ..< TILES_SIZE {
+	for y in 0 ..< ROOM_SIZE {
+		for x in 0 ..< ROOM_SIZE {
 			tile_x := i32(x * TILE_SIZE)
 			tile_y := i32(y * TILE_SIZE)
 
@@ -111,16 +116,18 @@ draw_floor_number :: proc() {
 		}
 	}
 
-	start_x := CENTRE - i32(floor_len) * 2
-	start_y := CENTRE - 2
+	start_x := ROOM_CENTRE - i32(floor_len) * 2
+	start_y := ROOM_CENTRE - 2
 
 	for i in 0 ..< floor_len {
 		digit := floor_str[i]
 		digit_x := start_x + i32(i) * 5
 		digit_y := start_y
 
-		if digit_x >= 1 && digit_x + 3 < TILES_SIZE - 1 &&
-		   digit_y >= 1 && digit_y + 3 < TILES_SIZE - 1 {
+		if digit_x >= 1 &&
+		   digit_x + 3 < ROOM_SIZE - 1 &&
+		   digit_y >= 1 &&
+		   digit_y + 3 < ROOM_SIZE - 1 {
 			pixel_x := digit_x * TILE_SIZE
 			pixel_y := digit_y * TILE_SIZE
 			draw_sprite(&digit_sprites[digit], pixel_x, i32(pixel_y), 0)
@@ -175,7 +182,12 @@ draw_battle_entities :: proc() {
 		for py in 0 ..< grid_size {
 			for px in 0 ..< grid_size {
 				if (px + py) % 2 == 0 {
-					damage_color := rl.Color{CATPPUCCIN_RED.r, CATPPUCCIN_RED.g, CATPPUCCIN_RED.b, alpha}
+					damage_color := rl.Color {
+						CATPPUCCIN_RED.r,
+						CATPPUCCIN_RED.g,
+						CATPPUCCIN_RED.b,
+						alpha,
+					}
 					rl.DrawPixel(pixel_x + px, pixel_y + py, damage_color)
 				}
 			}
@@ -202,4 +214,3 @@ draw_battle_entities :: proc() {
 		}
 	}
 }
-
