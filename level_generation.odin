@@ -8,9 +8,11 @@ ROOM_SIZE :: 16 // equalateral length of a room in tiles
 ROOM_CENTRE :: ROOM_SIZE / 2 // the centerpoint of a room
 TILE_COUNT :: ROOM_SIZE * ROOM_SIZE // number of tiles in a room
 
+Vec2 :: [2]i32
+
 generate_floor :: proc() {
 	visited := [FLOOR_SIZE][FLOOR_SIZE]bool{}
-	stack := [dynamic][2]i32{}
+	stack := [dynamic]Vec2{}
 	defer delete(stack)
 
 	for y in 0 ..< FLOOR_SIZE {
@@ -48,32 +50,34 @@ generate_floor :: proc() {
 			append(&neighbors, [3]i32{current_x, current_y + 1, i32(Direction.SOUTH)})
 		}
 
-		if len(neighbors) > 0 {
-			chosen := neighbors[rand.int31() % i32(len(neighbors))]
-			next_x, next_y, direction := chosen.x, chosen.y, Direction(chosen.z)
-
-			opposite_direction: Direction
-			switch direction {
-			case .NORTH: opposite_direction = .SOUTH
-			case .SOUTH: opposite_direction = .NORTH
-			case .EAST: opposite_direction = .WEST
-			case .WEST: opposite_direction = .EAST
-			}
-
-			game.floor_layout[current_y][current_x].connections[direction] = true
-			game.floor_layout[next_y][next_x].connections[opposite_direction] = true
-
-			visited[next_y][next_x] = true
-			append(&stack, [2]i32{next_x, next_y})
-			current_x, current_y = next_x, next_y
-		} else {
+		if len(neighbors) == 0 {
 			if len(stack) > 1 {
 				ordered_remove(&stack, len(stack) - 1)
 				current_x, current_y = stack[len(stack) - 1].x, stack[len(stack) - 1].y
 			} else {
 				break
 			}
+
+			continue
 		}
+
+		chosen := neighbors[rand.int31() % i32(len(neighbors))]
+		next_x, next_y, direction := chosen.x, chosen.y, Direction(chosen.z)
+
+		opposite_direction: Direction
+		switch direction {
+		case .NORTH: opposite_direction = .SOUTH
+		case .SOUTH: opposite_direction = .NORTH
+		case .EAST: opposite_direction = .WEST
+		case .WEST: opposite_direction = .EAST
+		}
+
+		game.floor_layout[current_y][current_x].connections[direction] = true
+		game.floor_layout[next_y][next_x].connections[opposite_direction] = true
+
+		visited[next_y][next_x] = true
+		append(&stack, [2]i32{next_x, next_y})
+		current_x, current_y = next_x, next_y
 	}
 
 	end_x := rand.int31() % FLOOR_SIZE
@@ -278,43 +282,31 @@ generate_room_tiles :: proc(room: ^Room) {
 }
 
 place_secret_walls :: proc() {
-	for room_y in 0 ..< FLOOR_SIZE {
-		for room_x in 0 ..< FLOOR_SIZE {
-			room := &game.floor_layout[room_y][room_x]
-			if room.id == 0 do continue
+	ROOM_END :: ROOM_SIZE - 1
+	FLOOR_END :: FLOOR_SIZE - 1
+	TILE_END :: ROOM_SIZE - 2
+	SECRET_WALL_SPAWN_CHANCE :: 0.1
 
-			if rand.int31() % 8 == 0 {
-				if !room.connections[.NORTH] &&
-				   room_y > 0 &&
-				   game.floor_layout[room_y - 1][room_x].id != 0 {
-					wall_x := 1 + rand.int31() % (ROOM_SIZE - 2)
-					if room.tiles[0][wall_x] == .STONE {
-						room.tiles[0][wall_x] = .SECRET_WALL
-					}
+	for ry in 0 ..< FLOOR_SIZE {
+		for rx in 0 ..< FLOOR_SIZE {
+			room := &game.floor_layout[ry][rx]
+
+			if rand.float32() <= SECRET_WALL_SPAWN_CHANCE {
+				if !room.connections[.NORTH] && ry > 0 {
+					tx := 1 + rand.int31() % TILE_END
+					room.tiles[0][tx] = .SECRET_WALL
 				}
-				if !room.connections[.SOUTH] &&
-				   room_y < FLOOR_SIZE - 1 &&
-				   game.floor_layout[room_y + 1][room_x].id != 0 {
-					wall_x := 1 + rand.int31() % (ROOM_SIZE - 2)
-					if room.tiles[ROOM_SIZE - 1][wall_x] == .STONE {
-						room.tiles[ROOM_SIZE - 1][wall_x] = .SECRET_WALL
-					}
+				if !room.connections[.SOUTH] && ry < FLOOR_END {
+					tx := 1 + rand.int31() % TILE_END
+					room.tiles[ROOM_END][tx] = .SECRET_WALL
 				}
-				if !room.connections[.WEST] &&
-				   room_x > 0 &&
-				   game.floor_layout[room_y][room_x - 1].id != 0 {
-					wall_y := 1 + rand.int31() % (ROOM_SIZE - 2)
-					if room.tiles[wall_y][0] == .STONE {
-						room.tiles[wall_y][0] = .SECRET_WALL
-					}
+				if !room.connections[.WEST] && rx > 0 {
+					ty := 1 + rand.int31() % TILE_END
+					room.tiles[ty][0] = .SECRET_WALL
 				}
-				if !room.connections[.EAST] &&
-				   room_x < FLOOR_SIZE - 1 &&
-				   game.floor_layout[room_y][room_x + 1].id != 0 {
-					wall_y := 1 + rand.int31() % (ROOM_SIZE - 2)
-					if room.tiles[wall_y][ROOM_SIZE - 1] == .STONE {
-						room.tiles[wall_y][ROOM_SIZE - 1] = .SECRET_WALL
-					}
+				if !room.connections[.EAST] && rx < FLOOR_END {
+					ty := 1 + rand.int31() % TILE_END
+					room.tiles[ty][ROOM_END] = .SECRET_WALL
 				}
 			}
 		}
