@@ -17,11 +17,11 @@ init_battle :: proc(enemy_x, enemy_y: i32) {
 		BattleEntity{x = 2, y = 6, is_player = true, health = 3, max_health = 3},
 	)
 
-	enemy_count := 2 + (len(game.enemies) % 3)
-	enemy_positions := [][2]i32{{5, 1}, {1, 1}, {6, 2}, {0, 3}, {7, 4}, {3, 0}, {4, 7}, {6, 6}}
+	enemy_count := 2 + rand.int31_max(3)
+	enemy_positions := []Vec2{{5, 1}, {1, 1}, {6, 2}, {0, 3}, {7, 4}, {3, 0}, {4, 7}, {6, 6}}
 
 	for i in 0 ..< enemy_count {
-		if i < len(enemy_positions) {
+		if int(i) < len(enemy_positions) {
 			pos := enemy_positions[i]
 			append(
 				&game.battle_grid.entities,
