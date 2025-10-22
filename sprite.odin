@@ -16,13 +16,13 @@ enemy_sprite := Sprite{{6, 6, 6, 6}, {6, 0, 0, 6}, {6, 0, 0, 6}, {6, 6, 6, 6}}
 
 exit_sprite := Sprite{{8, 8, 8, 8}, {8, 7, 7, 8}, {8, 7, 7, 8}, {8, 8, 8, 8}}
 
-key_sprite := Sprite{{0, 8, 8, 0}, {8, 8, 8, 8}, {8, 0, 8, 0}, {0, 0, 0, 0}}
+key_sprite := Sprite{{0, 0, 8, 8}, {8, 8, 8, 8}, {8, 0, 8, 0}, {8, 8, 8, 0}}
 
 locked_door_sprite := Sprite{{4, 4, 4, 4}, {4, 8, 8, 4}, {4, 8, 8, 4}, {4, 4, 4, 4}}
 
 secret_wall_sprite := Sprite{{1, 2, 1, 2}, {2, 1, 2, 1}, {1, 2, 1, 2}, {2, 1, 2, 1}}
 
-digit_sprites := [10]Sprite{
+digit_sprites := [10]Sprite {
 	{{7, 7, 7, 7}, {7, 0, 0, 7}, {7, 0, 0, 7}, {7, 7, 7, 7}},
 	{{0, 0, 7, 0}, {0, 7, 7, 0}, {0, 0, 7, 0}, {0, 7, 7, 7}},
 	{{7, 7, 7, 7}, {0, 0, 7, 7}, {7, 7, 0, 0}, {7, 7, 7, 7}},
@@ -37,7 +37,7 @@ digit_sprites := [10]Sprite{
 
 BattleSprite :: [8][8]u8
 
-battle_player_sprite := BattleSprite{
+battle_player_sprite := BattleSprite {
 	{0, 0, 7, 7, 7, 7, 0, 0},
 	{0, 7, 7, 7, 7, 7, 7, 0},
 	{7, 7, 7, 7, 7, 7, 7, 7},
@@ -48,7 +48,7 @@ battle_player_sprite := BattleSprite{
 	{0, 0, 7, 7, 7, 7, 0, 0},
 }
 
-battle_enemy_sprite := BattleSprite{
+battle_enemy_sprite := BattleSprite {
 	{6, 6, 6, 6, 6, 6, 6, 6},
 	{6, 6, 0, 6, 6, 0, 6, 6},
 	{6, 6, 0, 6, 6, 0, 6, 6},

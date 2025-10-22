@@ -145,7 +145,9 @@ init_game :: proc() {
 	game.current_room = 0
 	game.move_timer = 0
 	game.enemy_timer = 0
-	game.following_items = make([dynamic]FollowingItem)
+	if game.following_items == nil {
+		game.following_items = make([dynamic]FollowingItem)
+	}
 	game.unlocked_doors = make(map[[3]i32]bool)
 	game.state = .EXPLORATION
 	game.battle_grid.entities = make([dynamic]BattleEntity)
