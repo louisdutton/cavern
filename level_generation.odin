@@ -65,6 +65,7 @@ generate_floor :: proc() {
 	}
 
 	place_lock_and_key_on_path(start_x, start_y, end_x, end_y)
+	place_sword_and_shield(start_x, start_y, end_x, end_y)
 
 	if game.floor_number == 1 {
 		game.room_coords = {1, 1}
@@ -163,6 +164,55 @@ place_lock_and_key_on_path :: proc(start_x, start_y, end_x, end_y: i32) {
 		lock_y -= 1
 		game.floor_layout[key_y][key_x].locked_exits[.NORTH] = true
 		game.floor_layout[lock_y][key_x].locked_exits[.SOUTH] = true
+	}
+}
+
+place_sword_and_shield :: proc(start_x, start_y, end_x, end_y: i32) {
+	valid_rooms: [dynamic]Vec2
+	defer delete(valid_rooms)
+
+	for y in 0 ..< FLOOR_SIZE {
+		for x in 0 ..< FLOOR_SIZE {
+			if room_exists(i32(x), i32(y)) {
+				is_title := game.floor_number == 1 && x == 1 && y == 1
+				is_options := game.floor_number == 1 && x == 2 && y == 1
+				is_start := i32(x) == start_x && i32(y) == start_y
+				is_end := i32(x) == end_x && i32(y) == end_y
+
+				if !is_title && !is_options && !is_start && !is_end {
+					append(&valid_rooms, Vec2{i32(x), i32(y)})
+				}
+			}
+		}
+	}
+
+	if len(valid_rooms) >= 2 {
+		sword_room_idx := rand.int31() % i32(len(valid_rooms))
+		sword_room_pos := valid_rooms[sword_room_idx]
+		sword_room := &game.floor_layout[sword_room_pos.y][sword_room_pos.x]
+
+		sword_x := 1 + rand.int31() % (ROOM_SIZE - 2)
+		sword_y := 1 + rand.int31() % (ROOM_SIZE - 2)
+		for sword_room.tiles[sword_y][sword_x] != .GRASS {
+			sword_x = 1 + rand.int31() % (ROOM_SIZE - 2)
+			sword_y = 1 + rand.int31() % (ROOM_SIZE - 2)
+		}
+		sword_room.tiles[sword_y][sword_x] = .SWORD
+
+		shield_room_idx: i32
+		for shield_room_idx == sword_room_idx {
+			shield_room_idx = rand.int31() % i32(len(valid_rooms))
+		}
+		shield_room_pos := valid_rooms[shield_room_idx]
+		shield_room := &game.floor_layout[shield_room_pos.y][shield_room_pos.x]
+
+		shield_x := 1 + rand.int31() % (ROOM_SIZE - 2)
+		shield_y := 1 + rand.int31() % (ROOM_SIZE - 2)
+		for shield_room.tiles[shield_y][shield_x] != .GRASS {
+			shield_x = 1 + rand.int31() % (ROOM_SIZE - 2)
+			shield_y = 1 + rand.int31() % (ROOM_SIZE - 2)
+		}
+		shield_room.tiles[shield_y][shield_x] = .SHIELD
 	}
 }
 

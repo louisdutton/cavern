@@ -70,7 +70,10 @@ update_enemy_ai :: proc(enemy: ^BattleEntity) {
 	if enemy.is_telegraphing {
 		target := get_battle_entity_at(enemy.target_x, enemy.target_y)
 		if target != nil && target.is_player {
-			target.health -= 1
+			damage := 1 - get_defense_bonus()
+			if damage > 0 {
+				target.health -= damage
+			}
 			spawn_damage_indicator(enemy.target_x, enemy.target_y)
 			add_screen_shake(14)
 
@@ -176,7 +179,8 @@ update_battle :: proc() {
 
 	target := get_battle_entity_at(new_x, new_y)
 	if target != nil && !target.is_player {
-		target.health -= 1
+		damage := 1 + get_attack_bonus()
+		target.health -= damage
 		target.flash_timer = 2
 		spawn_damage_indicator(target.x, target.y)
 		add_screen_shake(19)

@@ -54,6 +54,8 @@ draw_world :: proc() {
 			case .BOULDER: sprite = &boulder_sprite
 			case .EXIT: sprite = &exit_sprite
 			case .KEY: sprite = &key_sprite
+			case .SWORD: sprite = &sword_sprite
+			case .SHIELD: sprite = &shield_sprite
 			case .LOCKED_DOOR: sprite = &locked_door_sprite
 			case .SECRET_WALL: sprite = &secret_wall_sprite
 			case .ENEMY: sprite = &enemy_sprite
@@ -77,7 +79,17 @@ draw_following_items :: proc() {
 	for item in game.following_items {
 		pixel_x := item.x * TILE_SIZE
 		pixel_y := item.y * TILE_SIZE
-		draw_sprite(&key_sprite, pixel_x, pixel_y, 0)
+
+		sprite: ^Sprite
+		#partial switch item.item_type {
+		case .KEY: sprite = &key_sprite
+		case .SWORD: sprite = &sword_sprite
+		case .SHIELD: sprite = &shield_sprite
+		}
+
+		if sprite != nil {
+			draw_sprite(sprite, pixel_x, pixel_y, 0)
+		}
 	}
 }
 

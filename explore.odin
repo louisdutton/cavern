@@ -156,7 +156,8 @@ update_player :: proc() {
 		game.player.y = 0
 	} else {
 		if is_tile_walkable(new_x, new_y) {
-			if game.world[new_y][new_x] == .KEY {
+			if game.world[new_y][new_x] == .KEY || game.world[new_y][new_x] == .SWORD || game.world[new_y][new_x] == .SHIELD {
+				item_type := game.world[new_y][new_x]
 				game.world[new_y][new_x] = .GRASS
 				append(
 					&game.following_items,
@@ -165,6 +166,7 @@ update_player :: proc() {
 						y = new_y,
 						target_x = game.player.x,
 						target_y = game.player.y,
+						item_type = item_type,
 					},
 				)
 			}
@@ -292,6 +294,24 @@ check_player_enemy_collision :: proc() -> bool {
 
 
 
+
+get_item_count :: proc(item_type: Tile) -> i32 {
+	count := i32(0)
+	for item in game.following_items {
+		if item.item_type == item_type {
+			count += 1
+		}
+	}
+	return count
+}
+
+get_attack_bonus :: proc() -> i32 {
+	return get_item_count(.SWORD)
+}
+
+get_defense_bonus :: proc() -> i32 {
+	return get_item_count(.SHIELD)
+}
 
 update_following_items :: proc(player_x, player_y: i32) {
 	if len(game.following_items) == 0 do return

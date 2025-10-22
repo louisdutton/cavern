@@ -24,6 +24,7 @@ Player :: struct {
 FollowingItem :: struct {
 	x, y:               i32,
 	target_x, target_y: i32,
+	item_type:          Tile,
 }
 
 Enemy :: struct {
@@ -40,6 +41,8 @@ Tile :: enum {
 	BOULDER,
 	EXIT,
 	KEY,
+	SWORD,
+	SHIELD,
 	LOCKED_DOOR,
 	SECRET_WALL,
 	ENEMY,
