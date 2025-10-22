@@ -233,6 +233,8 @@ update_player :: proc() {
 			if can_push_boulder(new_x, new_y, push_dir_x, push_dir_y) {
 				push_boulder(new_x, new_y, push_dir_x, push_dir_y)
 
+				update_following_items(game.player.x, game.player.y)
+
 				game.player.x = new_x
 				game.player.y = new_y
 				game.move_timer = MOVE_DELAY
