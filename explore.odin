@@ -115,11 +115,7 @@ unlock_door_connection :: proc(direction: Direction) {
 	}
 }
 
-update_player :: proc() {
-	game.move_timer -= 1
-
-	if game.move_timer > 0 do return
-
+player_get_input :: proc() -> (i32, i32, bool)  {
 	new_x := game.player.x
 	new_y := game.player.y
 	moved := false
@@ -138,7 +134,15 @@ update_player :: proc() {
 		moved = true
 	}
 
-	if !moved do return
+  return new_x, new_y, moved
+}
+
+update_player :: proc() {
+	game.move_timer -= 1
+	if game.move_timer > 0 do return
+
+  new_x, new_y, moved := player_get_input()
+  if !moved do return
 
 	room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
 
@@ -291,9 +295,6 @@ check_player_enemy_collision :: proc() -> bool {
 	}
 	return false
 }
-
-
-
 
 get_item_count :: proc(item_type: Tile) -> i32 {
 	count := i32(0)
