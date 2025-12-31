@@ -24,31 +24,16 @@ generate_floor :: proc() {
 	start_x, start_y: i32
 	end_x, end_y: i32
 
-	if game.floor_number == 1 {
-		start_x = 1
-		start_y = 2
-	} else {
-		start_x = rand.int31() % FLOOR_SIZE
-		start_y = rand.int31() % FLOOR_SIZE
-	}
+	start_x = rand.int31() % FLOOR_SIZE
+	start_y = rand.int31() % FLOOR_SIZE
 
 	end_x = rand.int31() % FLOOR_SIZE
 	end_y = rand.int31() % FLOOR_SIZE
 	min_distance := i32(3)
-	if game.floor_number == 1 {
-		for (end_x == start_x && end_y == start_y) ||
-		    (end_x == 1 && end_y == 1) ||
-		    (end_x == 2 && end_y == 1) ||
-		    (abs(end_x - start_x) + abs(end_y - start_y) < min_distance) {
-			end_x = rand.int31() % FLOOR_SIZE
-			end_y = rand.int31() % FLOOR_SIZE
-		}
-	} else {
-		for (end_x == start_x && end_y == start_y) ||
-		    (abs(end_x - start_x) + abs(end_y - start_y) < min_distance) {
-			end_x = rand.int31() % FLOOR_SIZE
-			end_y = rand.int31() % FLOOR_SIZE
-		}
+	for (end_x == start_x && end_y == start_y) ||
+	    (abs(end_x - start_x) + abs(end_y - start_y) < min_distance) {
+		end_x = rand.int31() % FLOOR_SIZE
+		end_y = rand.int31() % FLOOR_SIZE
 	}
 
 	create_path_start_to_end(start_x, start_y, end_x, end_y)
@@ -67,11 +52,7 @@ generate_floor :: proc() {
 	place_lock_and_key_on_path(start_x, start_y, end_x, end_y)
 	place_sword_and_shield(start_x, start_y, end_x, end_y)
 
-	if game.floor_number == 1 {
-		game.room_coords = {1, 1}
-	} else {
-		game.room_coords = {start_x, start_y}
-	}
+	game.room_coords = {start_x, start_y}
 }
 
 room_exists :: proc(x, y: i32) -> bool {
@@ -86,13 +67,6 @@ room_exists :: proc(x, y: i32) -> bool {
 }
 
 create_path_start_to_end :: proc(start_x, start_y, end_x, end_y: i32) {
-	if game.floor_number == 1 {
-		game.floor_layout[1][1].connections[.SOUTH] = true
-		game.floor_layout[1][1].connections[.EAST] = true
-		game.floor_layout[1][2].connections[.WEST] = true
-		game.floor_layout[2][1].connections[.NORTH] = true
-	}
-
 	current_x, current_y := start_x, start_y
 
 	for current_x != end_x {
@@ -140,9 +114,6 @@ place_lock_and_key_on_path :: proc(start_x, start_y, end_x, end_y: i32) {
 		}
 	}
 
-	if game.floor_number == 1 && (key_x == 1 && key_y == 1) do return
-	if game.floor_number == 1 && (key_x == 2 && key_y == 1) do return
-
 	key_room := &game.floor_layout[key_y][key_x]
 	key_room.tiles[ROOM_CENTRE][ROOM_CENTRE - 1] = .KEY
 
@@ -174,12 +145,10 @@ place_sword_and_shield :: proc(start_x, start_y, end_x, end_y: i32) {
 	for y in 0 ..< FLOOR_SIZE {
 		for x in 0 ..< FLOOR_SIZE {
 			if room_exists(i32(x), i32(y)) {
-				is_title := game.floor_number == 1 && x == 1 && y == 1
-				is_options := game.floor_number == 1 && x == 2 && y == 1
 				is_start := i32(x) == start_x && i32(y) == start_y
 				is_end := i32(x) == end_x && i32(y) == end_y
 
-				if !is_title && !is_options && !is_start && !is_end {
+				if !is_start && !is_end {
 					append(&valid_rooms, Vec2{i32(x), i32(y)})
 				}
 			}
@@ -249,14 +218,12 @@ generate_room_tiles :: proc(room: ^Room, room_x, room_y, start_x, start_y, end_x
 		room.tiles[ROOM_CENTRE][ROOM_SIZE - 1] = .GRASS
 	}
 
-	is_title := game.floor_number == 1 && room_x == 1 && room_y == 1
-	is_options := game.floor_number == 1 && room_x == 2 && room_y == 1
 	is_start := room_x == start_x && room_y == start_y
 	is_end := room_x == end_x && room_y == end_y
 
 	if is_end {
 		room.tiles[ROOM_CENTRE][ROOM_CENTRE] = .EXIT
-	} else if !is_start && !is_title && !is_options {
+	} else if !is_start {
 		boulder_count := 2 + (room.id % 3)
 		for _ in 0 ..< boulder_count {
 			boulder_x := 1 + rand.int31() % (ROOM_SIZE - 2)
@@ -270,12 +237,10 @@ generate_room_tiles :: proc(room: ^Room, room_x, room_y, start_x, start_y, end_x
 }
 
 generate_room_enemies :: proc(room: ^Room, room_x, room_y, start_x, start_y, end_x, end_y: i32) {
-	is_title := game.floor_number == 1 && room_x == 1 && room_y == 1
-	is_options := game.floor_number == 1 && room_x == 2 && room_y == 1
 	is_start := room_x == start_x && room_y == start_y
 	is_end := room_x == end_x && room_y == end_y
 
-	if !is_start && !is_end && !is_title && !is_options && rand.int31() % 3 == 0 {
+	if !is_start && !is_end && rand.int31() % 3 == 0 {
 		enemy_count := 2 + (room.id % 3)
 		for _ in 0 ..< enemy_count {
 			enemy_x := 1 + rand.int31() % (ROOM_SIZE - 2)

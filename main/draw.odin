@@ -95,8 +95,7 @@ draw_following_items :: proc() {
 
 
 draw_floor_number :: proc() {
-	if game.floor_number == 1 && game.room_coords.x == 1 && game.room_coords.y == 1 {
-		floor_str := [16]u8{}
+	floor_str := [16]u8{}
 	floor_len := 0
 	num := game.floor_number
 
@@ -150,7 +149,6 @@ draw_floor_number :: proc() {
 				}
 			}
 		}
-	}
 	}
 }
 

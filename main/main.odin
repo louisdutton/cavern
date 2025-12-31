@@ -157,9 +157,6 @@ init_game :: proc() {
 	game.battle_grid.attack_indicators = make([dynamic][2]i32)
 	game.battle_grid.damage_indicators = make([dynamic]DamageIndicator)
 
-	if game.floor_number == 0 {
-		game.floor_number = 1
-	}
 	generate_floor()
 	load_current_room()
 }
@@ -300,4 +297,3 @@ draw :: proc() {
 		draw_battle_entities()
 	}
 }
-
