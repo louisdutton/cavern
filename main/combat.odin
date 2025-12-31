@@ -1,5 +1,6 @@
 package main
 
+import "audio"
 import "core:math/rand"
 import rl "vendor:raylib"
 
@@ -77,7 +78,7 @@ update_enemy_ai :: proc(enemy: ^BattleEntity) {
 			spawn_damage_indicator(enemy.target_x, enemy.target_y)
 			add_screen_shake(14)
 
-			play_sound(.CLICK)
+			audio.play(.CLICK)
 		}
 		enemy.is_telegraphing = false
 
@@ -185,7 +186,7 @@ update_battle :: proc() {
 		spawn_damage_indicator(target.x, target.y)
 		add_screen_shake(19)
 
-		play_sound(.HURT)
+		audio.play(.HURT)
 
 		if target.health <= 0 {
 			for i := len(game.battle_grid.entities) - 1; i >= 0; i -= 1 {
@@ -204,7 +205,7 @@ update_battle :: proc() {
 		player_entity.y = new_y
 		game.move_timer = MOVE_DELAY
 
-		play_sound(.DESTROY)
+		audio.play(.DESTROY)
 	}
 
 	enemy_count := 0

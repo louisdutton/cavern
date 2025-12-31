@@ -1,5 +1,6 @@
 package main
 
+import "audio"
 import "core:math/rand"
 import rl "vendor:raylib"
 
@@ -55,23 +56,10 @@ Direction :: enum {
 	WEST,
 }
 
-SoundEffect :: enum {
-	CLICK,
-	COLLECT,
-	DESTROY,
-	GROWL,
-	HURT,
-	LOCKED,
-	METAL,
-	PICKUP,
-	UNLOCK,
-}
-
 GameState :: enum {
 	EXPLORATION,
 	BATTLE,
 }
-
 
 BattleEntity :: struct {
 	x, y:               i32,
@@ -113,8 +101,6 @@ Game :: struct {
 	current_room:    i32,
 	move_timer:      i32,
 	enemy_timer:     i32,
-	music:           rl.Music,
-	sounds:          [SoundEffect]rl.Sound,
 	floor_layout:    [FLOOR_SIZE][FLOOR_SIZE]Room,
 	room_coords:     [2]i32,
 	state:           GameState,
@@ -161,16 +147,6 @@ init_game :: proc() {
 	load_current_room()
 }
 
-init_audio :: proc() {
-	rl.InitAudioDevice()
-	rl.SetMasterVolume(0.2)
-	game.music = rl.LoadMusicStream("res/music.mp3")
-	for sound_type in SoundEffect {
-		game.sounds[sound_type] = rl.LoadSound(sound_paths[sound_type])
-	}
-	rl.PlayMusicStream(game.music)
-}
-
 update_dust :: proc() {
 	if game.state == .BATTLE {
 		for i := len(game.battle_grid.damage_indicators) - 1; i >= 0; i -= 1 {
@@ -191,12 +167,11 @@ main :: proc() {
 	rl.InitWindow(WINDOW_SIZE, WINDOW_SIZE, "cavern")
 	rl.SetTargetFPS(24)
 
-	init_audio()
+	audio.init()
 	init_game()
 
 	for !rl.WindowShouldClose() {
-
-		rl.UpdateMusicStream(game.music)
+		audio.music_update()
 
 		switch game.state {
 		case .EXPLORATION:
@@ -250,10 +225,8 @@ main :: proc() {
 		rl.EndDrawing()
 	}
 
-	rl.UnloadMusicStream(game.music)
-	for sound in game.sounds {
-		rl.UnloadSound(sound)
-	}
+	audio.fini()
+
 	rl.CloseAudioDevice()
 	rl.UnloadRenderTexture(game.render_texture)
 	rl.CloseWindow()

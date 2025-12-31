@@ -1,8 +1,8 @@
 package main
 
+import "audio"
 import "core:math/rand"
 import rl "vendor:raylib"
-
 
 is_tile_walkable :: proc(x, y: i32) -> bool {
 	assert(x < ROOM_SIZE && y < ROOM_SIZE)
@@ -115,7 +115,7 @@ unlock_door_connection :: proc(direction: Direction) {
 	}
 }
 
-player_get_input :: proc() -> (i32, i32, bool)  {
+player_get_input :: proc() -> (i32, i32, bool) {
 	new_x := game.player.x
 	new_y := game.player.y
 	moved := false
@@ -134,15 +134,15 @@ player_get_input :: proc() -> (i32, i32, bool)  {
 		moved = true
 	}
 
-  return new_x, new_y, moved
+	return new_x, new_y, moved
 }
 
 update_player :: proc() {
 	game.move_timer -= 1
 	if game.move_timer > 0 do return
 
-  new_x, new_y, moved := player_get_input()
-  if !moved do return
+	new_x, new_y, moved := player_get_input()
+	if !moved do return
 
 	room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
 
@@ -160,7 +160,9 @@ update_player :: proc() {
 		game.player.y = 0
 	} else {
 		if is_tile_walkable(new_x, new_y) {
-			if game.world[new_y][new_x] == .KEY || game.world[new_y][new_x] == .SWORD || game.world[new_y][new_x] == .SHIELD {
+			if game.world[new_y][new_x] == .KEY ||
+			   game.world[new_y][new_x] == .SWORD ||
+			   game.world[new_y][new_x] == .SHIELD {
 				item_type := game.world[new_y][new_x]
 				game.world[new_y][new_x] = .GRASS
 				append(
@@ -181,7 +183,7 @@ update_player :: proc() {
 			game.player.y = new_y
 			game.move_timer = MOVE_DELAY
 
-			play_sound(.CLICK)
+			audio.play(.CLICK)
 
 		} else if game.world[new_y][new_x] == .SECRET_WALL {
 			game.world[new_y][new_x] = .GRASS
@@ -209,7 +211,7 @@ update_player :: proc() {
 			}
 			game.move_timer = MOVE_DELAY
 
-			play_sound(.DESTROY)
+			audio.play(.DESTROY)
 
 			if new_x == 0 || new_x == ROOM_SIZE - 1 || new_y == 0 || new_y == ROOM_SIZE - 1 {
 				load_current_room()
@@ -222,8 +224,8 @@ update_player :: proc() {
 			if door_direction != -1 {
 				unlock_door_connection(Direction(door_direction))
 				add_screen_shake(15)
-				play_sound(.UNLOCK)
-				play_sound(.DESTROY)
+				audio.play(.UNLOCK)
+				audio.play(.DESTROY)
 			}
 
 			update_following_items(game.player.x, game.player.y)
@@ -245,7 +247,7 @@ update_player :: proc() {
 				game.player.y = new_y
 				game.move_timer = MOVE_DELAY
 
-				play_sound(.METAL)
+				audio.play(.METAL)
 			}
 		}
 		return
