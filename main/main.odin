@@ -118,11 +118,8 @@ add_screen_shake :: proc(intensity: int) {
 }
 
 init_game :: proc() {
-	game.player = Player {
-		x = ROOM_CENTRE,
-		y = ROOM_CENTRE,
-	}
-	game.render_texture = rl.LoadRenderTexture(GAME_SIZE, GAME_SIZE)
+	game.player.x = ROOM_CENTRE
+	game.player.y = ROOM_CENTRE
 	game.current_room = 0
 	game.move_timer = 0
 	game.enemy_timer = 0
@@ -156,6 +153,8 @@ main :: proc() {
 	rl.SetTargetFPS(24)
 
 	audio.init()
+	// perform one-time setup here
+	game.render_texture = rl.LoadRenderTexture(GAME_SIZE, GAME_SIZE)
 	init_game()
 
 	for !rl.WindowShouldClose() {
