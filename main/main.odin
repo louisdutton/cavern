@@ -300,3 +300,4 @@ draw :: proc() {
 		draw_battle_entities()
 	}
 }
+
