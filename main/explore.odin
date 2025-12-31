@@ -4,7 +4,7 @@ import "audio"
 import "core:math/rand"
 import rl "vendor:raylib"
 
-is_tile_walkable :: proc(x, y: i32) -> bool {
+is_tile_walkable :: proc(x, y: int) -> bool {
 	assert(x < ROOM_SIZE && y < ROOM_SIZE)
 	return(
 		game.world[y][x] != .STONE &&
@@ -13,11 +13,11 @@ is_tile_walkable :: proc(x, y: i32) -> bool {
 	)
 }
 
-can_unlock_door :: proc(x, y: i32) -> bool {
+can_unlock_door :: proc(x, y: int) -> bool {
 	return game.world[y][x] == .LOCKED_DOOR && len(game.following_items) > 0
 }
 
-can_push_boulder :: proc(boulder_x, boulder_y, push_dir_x, push_dir_y: i32) -> bool {
+can_push_boulder :: proc(boulder_x, boulder_y, push_dir_x, push_dir_y: int) -> bool {
 	if game.world[boulder_y][boulder_x] != .BOULDER do return false
 
 	new_boulder_x := boulder_x + push_dir_x
@@ -33,7 +33,7 @@ can_push_boulder :: proc(boulder_x, boulder_y, push_dir_x, push_dir_y: i32) -> b
 	return game.world[new_boulder_y][new_boulder_x] == .GRASS
 }
 
-push_boulder :: proc(boulder_x, boulder_y, push_dir_x, push_dir_y: i32) {
+push_boulder :: proc(boulder_x, boulder_y, push_dir_x, push_dir_y: int) {
 	if !can_push_boulder(boulder_x, boulder_y, push_dir_x, push_dir_y) do return
 
 	new_boulder_x := boulder_x + push_dir_x
@@ -43,16 +43,16 @@ push_boulder :: proc(boulder_x, boulder_y, push_dir_x, push_dir_y: i32) {
 	game.world[new_boulder_y][new_boulder_x] = .BOULDER
 }
 
-get_door_direction :: proc(x, y: i32) -> i32 {
-	if y == 0 && (x == ROOM_CENTRE - 1 || x == ROOM_CENTRE) do return i32(Direction.NORTH)
-	if y == ROOM_SIZE - 1 && (x == ROOM_CENTRE - 1 || x == ROOM_CENTRE) do return i32(Direction.SOUTH)
-	if x == 0 && (y == ROOM_CENTRE - 1 || y == ROOM_CENTRE) do return i32(Direction.WEST)
-	if x == ROOM_SIZE - 1 && (y == ROOM_CENTRE - 1 || y == ROOM_CENTRE) do return i32(Direction.EAST)
+get_door_direction :: proc(x, y: int) -> int {
+	if y == 0 && (x == ROOM_CENTRE - 1 || x == ROOM_CENTRE) do return int(Direction.NORTH)
+	if y == ROOM_SIZE - 1 && (x == ROOM_CENTRE - 1 || x == ROOM_CENTRE) do return int(Direction.SOUTH)
+	if x == 0 && (y == ROOM_CENTRE - 1 || y == ROOM_CENTRE) do return int(Direction.WEST)
+	if x == ROOM_SIZE - 1 && (y == ROOM_CENTRE - 1 || y == ROOM_CENTRE) do return int(Direction.EAST)
 	return -1
 }
 
 unlock_door_connection :: proc(direction: Direction) {
-	current_door_key := [3]i32{game.room_coords.x, game.room_coords.y, i32(direction)}
+	current_door_key := [3]int{game.room_coords.x, game.room_coords.y, int(direction)}
 	game.unlocked_doors[current_door_key] = true
 
 	switch direction {
@@ -60,10 +60,10 @@ unlock_door_connection :: proc(direction: Direction) {
 		game.world[0][ROOM_CENTRE - 1] = .GRASS
 		game.world[0][ROOM_CENTRE] = .GRASS
 		if game.room_coords.y > 0 {
-			neighbor_door_key := [3]i32 {
+			neighbor_door_key := [3]int {
 				game.room_coords.x,
 				game.room_coords.y - 1,
-				i32(Direction.SOUTH),
+				int(Direction.SOUTH),
 			}
 			game.unlocked_doors[neighbor_door_key] = true
 			neighbor_room := &game.floor_layout[game.room_coords.y - 1][game.room_coords.x]
@@ -74,10 +74,10 @@ unlock_door_connection :: proc(direction: Direction) {
 		game.world[ROOM_SIZE - 1][ROOM_CENTRE - 1] = .GRASS
 		game.world[ROOM_SIZE - 1][ROOM_CENTRE] = .GRASS
 		if game.room_coords.y < FLOOR_SIZE - 1 {
-			neighbor_door_key := [3]i32 {
+			neighbor_door_key := [3]int {
 				game.room_coords.x,
 				game.room_coords.y + 1,
-				i32(Direction.NORTH),
+				int(Direction.NORTH),
 			}
 			game.unlocked_doors[neighbor_door_key] = true
 			neighbor_room := &game.floor_layout[game.room_coords.y + 1][game.room_coords.x]
@@ -88,10 +88,10 @@ unlock_door_connection :: proc(direction: Direction) {
 		game.world[ROOM_CENTRE - 1][0] = .GRASS
 		game.world[ROOM_CENTRE][0] = .GRASS
 		if game.room_coords.x > 0 {
-			neighbor_door_key := [3]i32 {
+			neighbor_door_key := [3]int {
 				game.room_coords.x - 1,
 				game.room_coords.y,
-				i32(Direction.EAST),
+				int(Direction.EAST),
 			}
 			game.unlocked_doors[neighbor_door_key] = true
 			neighbor_room := &game.floor_layout[game.room_coords.y][game.room_coords.x - 1]
@@ -102,10 +102,10 @@ unlock_door_connection :: proc(direction: Direction) {
 		game.world[ROOM_CENTRE - 1][ROOM_SIZE - 1] = .GRASS
 		game.world[ROOM_CENTRE][ROOM_SIZE - 1] = .GRASS
 		if game.room_coords.x < FLOOR_SIZE - 1 {
-			neighbor_door_key := [3]i32 {
+			neighbor_door_key := [3]int {
 				game.room_coords.x + 1,
 				game.room_coords.y,
-				i32(Direction.WEST),
+				int(Direction.WEST),
 			}
 			game.unlocked_doors[neighbor_door_key] = true
 			neighbor_room := &game.floor_layout[game.room_coords.y][game.room_coords.x + 1]
@@ -115,7 +115,7 @@ unlock_door_connection :: proc(direction: Direction) {
 	}
 }
 
-player_get_input :: proc() -> (i32, i32, bool) {
+player_get_input :: proc() -> (int, int, bool) {
 	new_x := game.player.x
 	new_y := game.player.y
 	moved := false
@@ -265,13 +265,13 @@ update_enemies :: proc() {
 	for y in 0 ..< ROOM_SIZE {
 		for x in 0 ..< ROOM_SIZE {
 			if game.world[y][x] == .ENEMY {
-				new_x, new_y := i32(x), i32(y)
+				new_x, new_y := int(x), int(y)
 
 				if rand.int31() % 2 == 0 {
 					if rand.int31() % 2 == 0 {
-						new_x += (rand.int31() % 2) * 2 - 1
+						new_x += (int(rand.int31()) % 2) * 2 - 1
 					} else {
-						new_y += (rand.int31() % 2) * 2 - 1
+						new_y += (int(rand.int31()) % 2) * 2 - 1
 					}
 				}
 
@@ -292,14 +292,14 @@ update_enemies :: proc() {
 
 check_player_enemy_collision :: proc() -> bool {
 	if game.world[game.player.y][game.player.x] == .ENEMY {
-		init_battle(game.player.x, game.player.y)
+		combat_init(game.player.x, game.player.y)
 		return true
 	}
 	return false
 }
 
-get_item_count :: proc(item_type: Tile) -> i32 {
-	count := i32(0)
+get_item_count :: proc(item_type: Tile) -> int {
+	count := 0
 	for item in game.following_items {
 		if item.item_type == item_type {
 			count += 1
@@ -308,15 +308,15 @@ get_item_count :: proc(item_type: Tile) -> i32 {
 	return count
 }
 
-get_attack_bonus :: proc() -> i32 {
+get_attack_bonus :: proc() -> int {
 	return get_item_count(.SWORD)
 }
 
-get_defense_bonus :: proc() -> i32 {
+get_defense_bonus :: proc() -> int {
 	return get_item_count(.SHIELD)
 }
 
-update_following_items :: proc(player_x, player_y: i32) {
+update_following_items :: proc(player_x, player_y: int) {
 	if len(game.following_items) == 0 do return
 
 	prev_x := player_x

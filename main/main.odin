@@ -2,6 +2,7 @@ package main
 
 import "audio"
 import "core:math/rand"
+import "render"
 import rl "vendor:raylib"
 
 GAME_SIZE :: 64
@@ -10,28 +11,20 @@ WINDOW_SIZE :: 256
 MOVE_DELAY :: 2
 ENEMY_DELAY :: 7
 
-CATPPUCCIN_BASE :: rl.Color{30, 30, 46, 255}
-CATPPUCCIN_SURFACE0 :: rl.Color{49, 50, 68, 255}
-CATPPUCCIN_OVERLAY0 :: rl.Color{108, 112, 134, 255}
-CATPPUCCIN_BLUE :: rl.Color{137, 180, 250, 255}
-CATPPUCCIN_GREEN :: rl.Color{166, 227, 161, 255}
-CATPPUCCIN_RED :: rl.Color{243, 139, 168, 255}
-CATPPUCCIN_LAVENDER :: rl.Color{180, 190, 254, 255}
-
 Player :: struct {
-	x, y: i32,
+	x, y: int,
 }
 
 FollowingItem :: struct {
-	x, y:               i32,
-	target_x, target_y: i32,
+	x, y:               int,
+	target_x, target_y: int,
 	item_type:          Tile,
 }
 
 Enemy :: struct {
-	x, y:             i32,
-	direction:        i32,
-	min_pos, max_pos: i32,
+	x, y:             int,
+	direction:        int,
+	min_pos, max_pos: int,
 	axis:             u8,
 }
 
@@ -62,33 +55,33 @@ GameState :: enum {
 }
 
 BattleEntity :: struct {
-	x, y:               i32,
+	x, y:               int,
 	is_player:          bool,
-	health:             i32,
-	max_health:         i32,
+	health:             int,
+	max_health:         int,
 	is_telegraphing:    bool,
-	target_x, target_y: i32,
-	flash_timer:        i32,
+	target_x, target_y: int,
+	flash_timer:        int,
 }
 
 DamageIndicator :: struct {
-	x, y:     i32,
-	life:     i32,
-	max_life: i32,
+	x, y:     int,
+	life:     int,
+	max_life: int,
 }
 
 BattleGrid :: struct {
-	size:              i32,
+	size:              int,
 	entities:          [dynamic]BattleEntity,
-	turn:              i32,
-	attack_indicators: [dynamic][2]i32,
+	turn:              int,
+	attack_indicators: [dynamic][2]int,
 	damage_indicators: [dynamic]DamageIndicator,
-	screen_shake:      i32,
+	screen_shake:      int,
 }
 
 Room :: struct {
-	id:           i32,
-	x, y:         i32,
+	id:           int,
+	x, y:         int,
 	connections:  [Direction]bool,
 	locked_exits: [Direction]bool,
 	tiles:        [ROOM_SIZE][ROOM_SIZE]Tile,
@@ -98,32 +91,31 @@ Game :: struct {
 	player:          Player,
 	world:           ^[ROOM_SIZE][ROOM_SIZE]Tile,
 	render_texture:  rl.RenderTexture2D,
-	current_room:    i32,
-	move_timer:      i32,
-	enemy_timer:     i32,
+	current_room:    int,
+	move_timer:      int,
+	enemy_timer:     int,
 	floor_layout:    [FLOOR_SIZE][FLOOR_SIZE]Room,
-	room_coords:     [2]i32,
+	room_coords:     [2]int,
 	state:           GameState,
 	battle_grid:     BattleGrid,
-	floor_number:    i32,
+	floor_number:    int,
 	following_items: [dynamic]FollowingItem,
-	unlocked_doors:  map[[3]i32]bool,
+	unlocked_doors:  map[[3]int]bool,
 }
 
 game: Game
 
 
-spawn_damage_indicator :: proc(x, y: i32) {
+spawn_damage_indicator :: proc(x, y: int) {
 	append(
 		&game.battle_grid.damage_indicators,
 		DamageIndicator{x = x, y = y, life = 7, max_life = 7},
 	)
 }
 
-add_screen_shake :: proc(intensity: i32) {
+add_screen_shake :: proc(intensity: int) {
 	game.battle_grid.screen_shake = max(game.battle_grid.screen_shake, intensity)
 }
-
 
 init_game :: proc() {
 	game.player = Player {
@@ -137,10 +129,10 @@ init_game :: proc() {
 	if game.following_items == nil {
 		game.following_items = make([dynamic]FollowingItem)
 	}
-	game.unlocked_doors = make(map[[3]i32]bool)
+	game.unlocked_doors = make(map[[3]int]bool)
 	game.state = .EXPLORATION
 	game.battle_grid.entities = make([dynamic]BattleEntity)
-	game.battle_grid.attack_indicators = make([dynamic][2]i32)
+	game.battle_grid.attack_indicators = make([dynamic][2]int)
 	game.battle_grid.damage_indicators = make([dynamic]DamageIndicator)
 
 	generate_floor()
@@ -148,15 +140,11 @@ init_game :: proc() {
 }
 
 update_dust :: proc() {
-	if game.state == .BATTLE {
-		for i := len(game.battle_grid.damage_indicators) - 1; i >= 0; i -= 1 {
-			game.battle_grid.damage_indicators[i].life -= 1
-			if game.battle_grid.damage_indicators[i].life <= 0 {
-				ordered_remove(&game.battle_grid.damage_indicators, i)
-			}
+	for i := len(game.battle_grid.damage_indicators) - 1; i >= 0; i -= 1 {
+		game.battle_grid.damage_indicators[i].life -= 1
+		if game.battle_grid.damage_indicators[i].life <= 0 {
+			ordered_remove(&game.battle_grid.damage_indicators, i)
 		}
-
-		game.battle_grid.screen_shake = max(0, game.battle_grid.screen_shake - 8)
 	}
 
 	game.battle_grid.screen_shake = max(0, game.battle_grid.screen_shake - 8)
@@ -190,7 +178,7 @@ main :: proc() {
 			}
 
 			rl.BeginTextureMode(game.render_texture)
-			rl.ClearBackground(CATPPUCCIN_BASE)
+			render.clear_background()
 			draw_world()
 			draw_floor_number()
 			draw_following_items()
@@ -198,11 +186,11 @@ main :: proc() {
 			rl.EndTextureMode()
 
 		case .BATTLE:
-			update_battle()
+			combat_update()
 			update_dust()
 
 			rl.BeginTextureMode(game.render_texture)
-			rl.ClearBackground(CATPPUCCIN_BASE)
+			render.clear_background()
 			draw_battle_grid()
 			draw_battle_entities()
 			rl.EndTextureMode()
@@ -230,43 +218,4 @@ main :: proc() {
 	rl.CloseAudioDevice()
 	rl.UnloadRenderTexture(game.render_texture)
 	rl.CloseWindow()
-}
-
-update :: proc() {
-	switch game.state {
-	case .EXPLORATION:
-		update_player()
-		update_enemies()
-		update_dust()
-
-		if check_player_enemy_collision() do return
-
-		if game.world[game.player.y][game.player.x] == .EXIT {
-			game.floor_number += 1
-			init_game()
-			return
-		}
-
-	case .BATTLE:
-		update_battle()
-		update_dust()
-	}
-}
-
-draw :: proc() {
-	rl.BeginTextureMode(game.render_texture)
-	rl.ClearBackground(CATPPUCCIN_BASE)
-	defer rl.EndTextureMode()
-
-	switch game.state {
-	case .EXPLORATION:
-		draw_world()
-		draw_floor_number()
-		draw_following_items()
-		draw_player()
-
-	case .BATTLE:
-		draw_battle_grid()
-		draw_battle_entities()
-	}
 }

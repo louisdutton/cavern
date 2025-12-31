@@ -1,0 +1,11 @@
+package render
+
+import rl "vendor:raylib"
+
+CATPPUCCIN_BASE :: rl.Color{30, 30, 46, 255}
+CATPPUCCIN_SURFACE0 :: rl.Color{49, 50, 68, 255}
+CATPPUCCIN_OVERLAY0 :: rl.Color{108, 112, 134, 255}
+CATPPUCCIN_BLUE :: rl.Color{137, 180, 250, 255}
+CATPPUCCIN_GREEN :: rl.Color{166, 227, 161, 255}
+CATPPUCCIN_RED :: rl.Color{243, 139, 168, 255}
+CATPPUCCIN_LAVENDER :: rl.Color{180, 190, 254, 255}

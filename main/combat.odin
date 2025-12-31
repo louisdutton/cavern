@@ -4,7 +4,7 @@ import "audio"
 import "core:math/rand"
 import rl "vendor:raylib"
 
-init_battle :: proc(enemy_x, enemy_y: i32) {
+combat_init :: proc(enemy_x, enemy_y: int) {
 	game.state = .BATTLE
 	game.battle_grid.size = 8
 	game.battle_grid.turn = 0
@@ -18,11 +18,11 @@ init_battle :: proc(enemy_x, enemy_y: i32) {
 		BattleEntity{x = 2, y = 6, is_player = true, health = 3, max_health = 3},
 	)
 
-	enemy_count := 2 + rand.int31_max(3)
+	enemy_count := 2 + rand.int_max(3)
 	enemy_positions := []Vec2{{5, 1}, {1, 1}, {6, 2}, {0, 3}, {7, 4}, {3, 0}, {4, 7}, {6, 6}}
 
 	for i in 0 ..< enemy_count {
-		if int(i) < len(enemy_positions) {
+		if i < len(enemy_positions) {
 			pos := enemy_positions[i]
 			append(
 				&game.battle_grid.entities,
@@ -32,7 +32,7 @@ init_battle :: proc(enemy_x, enemy_y: i32) {
 	}
 }
 
-end_battle :: proc() {
+combat_fini :: proc() {
 	game.state = .EXPLORATION
 
 	defeated_enemy_x, defeated_enemy_y := game.player.x, game.player.y
@@ -44,7 +44,7 @@ end_battle :: proc() {
 	clear(&game.battle_grid.damage_indicators)
 }
 
-get_battle_entity_at :: proc(x, y: i32) -> ^BattleEntity {
+get_battle_entity_at :: proc(x, y: int) -> ^BattleEntity {
 	for &entity in game.battle_grid.entities {
 		if entity.x == x && entity.y == y {
 			return &entity
@@ -53,7 +53,7 @@ get_battle_entity_at :: proc(x, y: i32) -> ^BattleEntity {
 	return nil
 }
 
-is_battle_position_valid :: proc(x, y: i32) -> bool {
+is_battle_position_valid :: proc(x, y: int) -> bool {
 	return x >= 0 && x < game.battle_grid.size && y >= 0 && y < game.battle_grid.size
 }
 
@@ -100,7 +100,7 @@ update_enemy_ai :: proc(enemy: ^BattleEntity) {
 				enemy.target_y = player_entity.y
 				append(
 					&game.battle_grid.attack_indicators,
-					[2]i32{player_entity.x, player_entity.y},
+					[2]int{player_entity.x, player_entity.y},
 				)
 				return
 			}
@@ -133,7 +133,7 @@ update_enemy_ai :: proc(enemy: ^BattleEntity) {
 	}
 }
 
-update_battle :: proc() {
+combat_update :: proc() {
 	for &entity in game.battle_grid.entities {
 		if entity.flash_timer > 0 {
 			entity.flash_timer -= 1
@@ -235,6 +235,6 @@ update_battle :: proc() {
 		}
 	}
 	if enemy_count == 0 {
-		end_battle()
+		combat_fini()
 	}
 }
