@@ -14,7 +14,7 @@ is_tile_walkable :: proc(x, y: int) -> bool {
 }
 
 can_unlock_door :: proc(x, y: int) -> bool {
-	return game.world[y][x] == .LOCKED_DOOR && len(game.following_items) > 0
+	return game.world[y][x] == .LOCKED_DOOR && len(game.inventory) > 0
 }
 
 can_push_boulder :: proc(boulder_x, boulder_y, push_dir_x, push_dir_y: int) -> bool {
@@ -163,16 +163,16 @@ update_player :: proc() {
 			if game.world[new_y][new_x] == .KEY ||
 			   game.world[new_y][new_x] == .SWORD ||
 			   game.world[new_y][new_x] == .SHIELD {
-				item_type := game.world[new_y][new_x]
+				kind := game.world[new_y][new_x]
 				game.world[new_y][new_x] = .GRASS
 				append(
-					&game.following_items,
-					FollowingItem {
+					&game.inventory,
+					Item {
 						x = new_x,
 						y = new_y,
 						target_x = game.player.x,
 						target_y = game.player.y,
-						item_type = item_type,
+						kind = kind,
 					},
 				)
 			}
@@ -218,7 +218,7 @@ update_player :: proc() {
 			}
 
 		} else if can_unlock_door(new_x, new_y) {
-			ordered_remove(&game.following_items, len(game.following_items) - 1)
+			ordered_remove(&game.inventory, len(game.inventory) - 1)
 
 			door_direction := get_door_direction(new_x, new_y)
 			if door_direction != -1 {
@@ -298,10 +298,10 @@ check_player_enemy_collision :: proc() -> bool {
 	return false
 }
 
-get_item_count :: proc(item_type: Tile) -> int {
+get_item_count :: proc(kind: Tile) -> int {
 	count := 0
-	for item in game.following_items {
-		if item.item_type == item_type {
+	for item in game.inventory {
+		if item.kind == kind {
 			count += 1
 		}
 	}
@@ -317,13 +317,13 @@ get_defense_bonus :: proc() -> int {
 }
 
 update_following_items :: proc(player_x, player_y: int) {
-	if len(game.following_items) == 0 do return
+	if len(game.inventory) == 0 do return
 
 	prev_x := player_x
 	prev_y := player_y
 
-	for i in 0 ..< len(game.following_items) {
-		item := &game.following_items[i]
+	for i in 0 ..< len(game.inventory) {
+		item := &game.inventory[i]
 
 		old_x := item.x
 		old_y := item.y

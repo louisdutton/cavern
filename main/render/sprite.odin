@@ -6,7 +6,7 @@ TILE_SIZE :: 4
 COMBAT_TILE_SIZE :: 8
 
 Sprite :: [TILE_SIZE][TILE_SIZE]u8
-BattleSprite :: [COMBAT_TILE_SIZE][COMBAT_TILE_SIZE]u8
+CombatSprite :: [COMBAT_TILE_SIZE][COMBAT_TILE_SIZE]u8
 
 draw_sprite :: proc(sprite: ^Sprite, x, y: int, transparent_index: u8 = 0) {
 	x0 := x * TILE_SIZE
@@ -22,8 +22,8 @@ draw_sprite :: proc(sprite: ^Sprite, x, y: int, transparent_index: u8 = 0) {
 	}
 }
 
-draw_battle_sprite :: proc(
-	sprite: ^BattleSprite,
+draw_combat_sprite :: proc(
+	sprite: ^CombatSprite,
 	x, y: int,
 	transparent_index: u8 = 0,
 	flash_white: bool = false,
@@ -72,7 +72,7 @@ digit_sprites := [10]Sprite {
 }
 
 
-battle_player_sprite := BattleSprite {
+combat_player_sprite := CombatSprite {
 	{0, 0, 7, 7, 7, 7, 0, 0},
 	{0, 7, 7, 7, 7, 7, 7, 0},
 	{7, 7, 7, 7, 7, 7, 7, 7},
@@ -83,7 +83,7 @@ battle_player_sprite := BattleSprite {
 	{0, 0, 7, 7, 7, 7, 0, 0},
 }
 
-battle_enemy_sprite := BattleSprite {
+combat_enemy_sprite := CombatSprite {
 	{6, 6, 6, 6, 6, 6, 6, 6},
 	{6, 6, 0, 6, 6, 0, 6, 6},
 	{6, 6, 0, 6, 6, 0, 6, 6},

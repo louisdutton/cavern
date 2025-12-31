@@ -51,4 +51,6 @@ fini :: proc() {
 	for sound in sounds {
 		rl.UnloadSound(sound)
 	}
+
+	rl.CloseAudioDevice()
 }

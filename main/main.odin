@@ -15,10 +15,10 @@ Player :: struct {
 	x, y: int,
 }
 
-FollowingItem :: struct {
+Item :: struct {
 	x, y:               int,
 	target_x, target_y: int,
-	item_type:          Tile,
+	kind:               Tile,
 }
 
 Enemy :: struct {
@@ -51,10 +51,10 @@ Direction :: enum {
 
 GameState :: enum {
 	EXPLORATION,
-	BATTLE,
+	COMBAT,
 }
 
-BattleEntity :: struct {
+CombatEntity :: struct {
 	x, y:               int,
 	is_player:          bool,
 	health:             int,
@@ -70,11 +70,11 @@ DamageIndicator :: struct {
 	max_life: int,
 }
 
-BattleGrid :: struct {
+CombatGrid :: struct {
 	size:              int,
-	entities:          [dynamic]BattleEntity,
+	entities:          [dynamic]CombatEntity,
 	turn:              int,
-	attack_indicators: [dynamic][2]int,
+	attack_indicators: [dynamic]Vec2,
 	damage_indicators: [dynamic]DamageIndicator,
 	screen_shake:      int,
 }
@@ -88,19 +88,19 @@ Room :: struct {
 }
 
 Game :: struct {
-	player:          Player,
-	world:           ^[ROOM_SIZE][ROOM_SIZE]Tile,
-	render_texture:  rl.RenderTexture2D,
-	current_room:    int,
-	move_timer:      int,
-	enemy_timer:     int,
-	floor_layout:    [FLOOR_SIZE][FLOOR_SIZE]Room,
-	room_coords:     [2]int,
-	state:           GameState,
-	battle_grid:     BattleGrid,
-	floor_number:    int,
-	following_items: [dynamic]FollowingItem,
-	unlocked_doors:  map[[3]int]bool,
+	player:         Player,
+	world:          ^[ROOM_SIZE][ROOM_SIZE]Tile,
+	render_texture: rl.RenderTexture2D,
+	current_room:   int,
+	move_timer:     int,
+	enemy_timer:    int,
+	floor_layout:   [FLOOR_SIZE][FLOOR_SIZE]Room,
+	floor_number:   int,
+	room_coords:    Vec2,
+	state:          GameState,
+	combat_grid:    CombatGrid,
+	inventory:      [dynamic]Item,
+	unlocked_doors: map[[3]int]bool,
 }
 
 game: Game
@@ -108,13 +108,13 @@ game: Game
 
 spawn_damage_indicator :: proc(x, y: int) {
 	append(
-		&game.battle_grid.damage_indicators,
+		&game.combat_grid.damage_indicators,
 		DamageIndicator{x = x, y = y, life = 7, max_life = 7},
 	)
 }
 
 add_screen_shake :: proc(intensity: int) {
-	game.battle_grid.screen_shake = max(game.battle_grid.screen_shake, intensity)
+	game.combat_grid.screen_shake = max(game.combat_grid.screen_shake, intensity)
 }
 
 init_game :: proc() {
@@ -123,28 +123,17 @@ init_game :: proc() {
 	game.current_room = 0
 	game.move_timer = 0
 	game.enemy_timer = 0
-	if game.following_items == nil {
-		game.following_items = make([dynamic]FollowingItem)
+	if game.inventory == nil {
+		game.inventory = make([dynamic]Item)
 	}
 	game.unlocked_doors = make(map[[3]int]bool)
 	game.state = .EXPLORATION
-	game.battle_grid.entities = make([dynamic]BattleEntity)
-	game.battle_grid.attack_indicators = make([dynamic][2]int)
-	game.battle_grid.damage_indicators = make([dynamic]DamageIndicator)
+	game.combat_grid.entities = make([dynamic]CombatEntity)
+	game.combat_grid.attack_indicators = make([dynamic][2]int)
+	game.combat_grid.damage_indicators = make([dynamic]DamageIndicator)
 
 	generate_floor()
 	load_current_room()
-}
-
-update_dust :: proc() {
-	for i := len(game.battle_grid.damage_indicators) - 1; i >= 0; i -= 1 {
-		game.battle_grid.damage_indicators[i].life -= 1
-		if game.battle_grid.damage_indicators[i].life <= 0 {
-			ordered_remove(&game.battle_grid.damage_indicators, i)
-		}
-	}
-
-	game.battle_grid.screen_shake = max(0, game.battle_grid.screen_shake - 8)
 }
 
 main :: proc() {
@@ -164,7 +153,6 @@ main :: proc() {
 		case .EXPLORATION:
 			update_player()
 			update_enemies()
-			update_dust()
 
 			if check_player_enemy_collision() {
 				continue
@@ -184,14 +172,15 @@ main :: proc() {
 			draw_player()
 			rl.EndTextureMode()
 
-		case .BATTLE:
+		case .COMBAT:
 			combat_update()
 			update_dust()
+			update_screen_shake()
 
 			rl.BeginTextureMode(game.render_texture)
 			render.clear_background()
-			draw_battle_grid()
-			draw_battle_entities()
+			draw_combat_grid()
+			draw_combat_entities()
 			rl.EndTextureMode()
 		}
 
@@ -199,9 +188,9 @@ main :: proc() {
 
 		shake_x := f32(0)
 		shake_y := f32(0)
-		if game.battle_grid.screen_shake > 0 {
-			shake_x = (f32(rand.int31() % 5) - 2) * f32(game.battle_grid.screen_shake)
-			shake_y = (f32(rand.int31() % 5) - 2) * f32(game.battle_grid.screen_shake)
+		if game.combat_grid.screen_shake > 0 {
+			shake_x = (f32(rand.int31() % 5) - 2) * f32(game.combat_grid.screen_shake)
+			shake_y = (f32(rand.int31() % 5) - 2) * f32(game.combat_grid.screen_shake)
 		}
 
 		dest_rect := rl.Rectangle{shake_x, shake_y, WINDOW_SIZE, WINDOW_SIZE}
@@ -214,7 +203,6 @@ main :: proc() {
 
 	audio.fini()
 
-	rl.CloseAudioDevice()
 	rl.UnloadRenderTexture(game.render_texture)
 	rl.CloseWindow()
 }

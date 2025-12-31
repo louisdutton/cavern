@@ -3,11 +3,11 @@ package main
 import "render"
 import rl "vendor:raylib"
 
-draw_battle_grid :: proc() {
-	grid_size := GAME_SIZE / game.battle_grid.size
+draw_combat_grid :: proc() {
+	grid_size := GAME_SIZE / game.combat_grid.size
 
-	for y in 0 ..< game.battle_grid.size {
-		for x in 0 ..< game.battle_grid.size {
+	for y in 0 ..< game.combat_grid.size {
+		for x in 0 ..< game.combat_grid.size {
 			tile_x := x * grid_size
 			tile_y := y * grid_size
 
@@ -27,10 +27,10 @@ draw_battle_grid :: proc() {
 	}
 }
 
-draw_battle_entities :: proc() {
-	grid_size := GAME_SIZE / game.battle_grid.size
+draw_combat_entities :: proc() {
+	grid_size := GAME_SIZE / game.combat_grid.size
 
-	for indicator in game.battle_grid.attack_indicators {
+	for indicator in game.combat_grid.attack_indicators {
 		pixel_x := indicator.x * grid_size
 		pixel_y := indicator.y * grid_size
 
@@ -41,7 +41,7 @@ draw_battle_entities :: proc() {
 		}
 	}
 
-	for damage in game.battle_grid.damage_indicators {
+	for damage in game.combat_grid.damage_indicators {
 		pixel_x := damage.x * grid_size
 		pixel_y := damage.y * grid_size
 		alpha := f32(damage.life) / f32(damage.max_life)
@@ -56,12 +56,12 @@ draw_battle_entities :: proc() {
 		}
 	}
 
-	for entity in game.battle_grid.entities {
+	for entity in game.combat_grid.entities {
 		pixel_x := entity.x * grid_size
 		pixel_y := entity.y * grid_size
 
 		if entity.is_player {
-			render.draw_battle_sprite(&render.battle_player_sprite, pixel_x, pixel_y, 0)
+			render.draw_combat_sprite(&render.combat_player_sprite, pixel_x, pixel_y, 0)
 
 			for i in 0 ..< entity.health {
 				heart_x := i32(pixel_x + i * 2)
@@ -72,8 +72,8 @@ draw_battle_entities :: proc() {
 			}
 		} else {
 			flash_white := entity.flash_timer > 0
-			render.draw_battle_sprite(
-				&render.battle_enemy_sprite,
+			render.draw_combat_sprite(
+				&render.combat_enemy_sprite,
 				pixel_x,
 				pixel_y,
 				0,

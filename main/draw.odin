@@ -31,8 +31,8 @@ draw_player :: proc() {
 }
 
 draw_following_items :: proc() {
-	for item in game.following_items {
-		sprite := tile_to_sprite[item.item_type]
+	for item in game.inventory {
+		sprite := tile_to_sprite[item.kind]
 		render.draw_sprite(sprite, item.x, item.y)
 	}
 }
