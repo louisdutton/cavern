@@ -28,7 +28,6 @@ Enemy :: struct {
 	axis:             u8,
 }
 
-
 Tile :: enum {
 	GRASS,
 	STONE,
@@ -54,29 +53,10 @@ GameMode :: enum {
 	COMBAT,
 }
 
-CombatEntity :: struct {
-	x, y:               int,
-	is_player:          bool,
-	health:             int,
-	max_health:         int,
-	is_telegraphing:    bool,
-	target_x, target_y: int,
-	flash_timer:        int,
-}
-
 DamageIndicator :: struct {
 	x, y:     int,
 	life:     int,
 	max_life: int,
-}
-
-CombatGrid :: struct {
-	size:              int,
-	entities:          [dynamic]CombatEntity,
-	turn:              int,
-	attack_indicators: [dynamic]Vec2,
-	damage_indicators: [dynamic]DamageIndicator,
-	screen_shake:      int,
 }
 
 Room :: struct {
@@ -90,7 +70,6 @@ Room :: struct {
 Game :: struct {
 	player:         Player,
 	world:          ^[ROOM_SIZE][ROOM_SIZE]Tile,
-	render_texture: rl.RenderTexture2D,
 	current_room:   int,
 	move_timer:     int,
 	enemy_timer:    int,
@@ -105,7 +84,7 @@ Game :: struct {
 
 game: Game
 
-init_game :: proc() {
+explore_init :: proc() {
 	game.player.x = ROOM_CENTRE
 	game.player.y = ROOM_CENTRE
 	game.current_room = 0
@@ -129,10 +108,10 @@ main :: proc() {
 	rl.InitWindow(WINDOW_SIZE, WINDOW_SIZE, "cavern")
 	rl.SetTargetFPS(24)
 
+	render.init(WINDOW_SIZE, GAME_SIZE)
 	audio.init()
-	// perform one-time setup here
-	game.render_texture = rl.LoadRenderTexture(GAME_SIZE, GAME_SIZE)
-	init_game()
+
+	explore_init()
 
 	for !rl.WindowShouldClose() {
 		audio.music_update()
@@ -148,49 +127,33 @@ main :: proc() {
 
 			if game.world[game.player.y][game.player.x] == .EXIT {
 				game.floor_number += 1
-				init_game()
+				explore_init()
 				continue
 			}
 
-			rl.BeginTextureMode(game.render_texture)
-			render.clear_background()
+			render.begin()
 			draw_world()
 			draw_floor_number()
 			draw_following_items()
 			draw_player()
-			rl.EndTextureMode()
+			render.end()
 
 		case .COMBAT:
 			combat_update()
 			update_dust()
 			update_screen_shake()
 
-			rl.BeginTextureMode(game.render_texture)
-			render.clear_background()
+			render.begin()
 			draw_combat_grid()
 			draw_combat_entities()
-			rl.EndTextureMode()
+			render.end()
 		}
 
-		rl.BeginDrawing()
-
-		shake_x := f32(0)
-		shake_y := f32(0)
-		if game.combat.screen_shake > 0 {
-			shake_x = (f32(rand.int31() % 5) - 2) * f32(game.combat.screen_shake)
-			shake_y = (f32(rand.int31() % 5) - 2) * f32(game.combat.screen_shake)
-		}
-
-		dest_rect := rl.Rectangle{shake_x, shake_y, WINDOW_SIZE, WINDOW_SIZE}
-		source_rect := rl.Rectangle{0, 0, GAME_SIZE, -GAME_SIZE}
-
-		rl.DrawTexturePro(game.render_texture.texture, source_rect, dest_rect, {0, 0}, 0, rl.WHITE)
-
-		rl.EndDrawing()
+		render.draw(game.combat.screen_shake)
 	}
 
 	audio.fini()
+	render.fini()
 
-	rl.UnloadRenderTexture(game.render_texture)
 	rl.CloseWindow()
 }

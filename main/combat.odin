@@ -4,6 +4,25 @@ import "audio"
 import "core:math/rand"
 import rl "vendor:raylib"
 
+CombatEntity :: struct {
+	x, y:               int,
+	is_player:          bool,
+	health:             int,
+	max_health:         int,
+	is_telegraphing:    bool,
+	target_x, target_y: int,
+	flash_timer:        int,
+}
+
+CombatGrid :: struct {
+	size:              int,
+	entities:          [dynamic]CombatEntity,
+	turn:              int,
+	attack_indicators: [dynamic]Vec2,
+	damage_indicators: [dynamic]DamageIndicator,
+	screen_shake:      int,
+}
+
 combat_init :: proc(enemy_x, enemy_y: int) {
 	game.mode = .COMBAT
 	game.combat.size = 8
@@ -207,7 +226,7 @@ combat_update :: proc() {
 	for i := len(game.combat.entities) - 1; i >= 0; i -= 1 {
 		entity := &game.combat.entities[i]
 		if entity.is_player && entity.health <= 0 {
-			init_game()
+			explore_init()
 			return
 		}
 	}
