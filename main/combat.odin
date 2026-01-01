@@ -38,6 +38,7 @@ combat_fini :: proc() {
 	defeated_enemy_x, defeated_enemy_y := game.player.x, game.player.y
 
 	game.world[defeated_enemy_y][defeated_enemy_x] = .GRASS
+	game.combat_grid.screen_shake = 0
 
 	clear(&game.combat_grid.entities)
 	clear(&game.combat_grid.attack_indicators)
@@ -134,6 +135,12 @@ update_enemy_ai :: proc(enemy: ^CombatEntity) {
 }
 
 combat_update :: proc() {
+	// return to exploration mode upon defeating all enemies
+	// (only the player entity remains)
+	if len(game.combat_grid.entities) == 1 {
+		combat_fini()
+	}
+
 	for &entity in game.combat_grid.entities {
 		if entity.flash_timer > 0 {
 			entity.flash_timer -= 1
@@ -153,32 +160,16 @@ combat_update :: proc() {
 			break
 		}
 	}
-
 	if player_entity == nil do return
 
-	new_x := player_entity.x
-	new_y := player_entity.y
-	moved := false
+	dir := input_get_direction()
+	if vec2_is_zero(dir) do return
 
-	if rl.IsKeyDown(.W) {
-		new_y -= 1
-		moved = true
-	} else if rl.IsKeyDown(.S) {
-		new_y += 1
-		moved = true
-	} else if rl.IsKeyDown(.A) {
-		new_x -= 1
-		moved = true
-	} else if rl.IsKeyDown(.D) {
-		new_x += 1
-		moved = true
-	}
+	target_pos := dir + Vec2{player_entity.x, player_entity.y}
+	if !combat_is_position_valid(target_pos.x, target_pos.y) do return
 
-	if !moved do return
-
-	if !combat_is_position_valid(new_x, new_y) do return
-
-	target := combat_get_entity_at(new_x, new_y)
+	// attack
+	target := combat_get_entity_at(target_pos.x, target_pos.y)
 	if target != nil && !target.is_player {
 		damage := 1 + get_attack_bonus()
 		target.health -= damage
@@ -200,42 +191,28 @@ combat_update :: proc() {
 		return
 	}
 
+	// regular movement
 	if target == nil {
-		player_entity.x = new_x
-		player_entity.y = new_y
+		player_entity.x = target_pos.x
+		player_entity.y = target_pos.y
 		game.move_timer = MOVE_DELAY
 
-		audio.play(.DESTROY)
+		audio.play(.CLICK)
 	}
 
-	enemy_count := 0
-	for entity in game.combat_grid.entities {
-		if !entity.is_player {
-			enemy_count += 1
-		}
-	}
 	for &enemy in game.combat_grid.entities {
 		if !enemy.is_player {
 			update_enemy_ai(&enemy)
 		}
 	}
 
+	// restart game immediately on player death
 	for i := len(game.combat_grid.entities) - 1; i >= 0; i -= 1 {
 		entity := &game.combat_grid.entities[i]
 		if entity.is_player && entity.health <= 0 {
 			init_game()
 			return
 		}
-	}
-
-	enemy_count = 0
-	for entity in game.combat_grid.entities {
-		if !entity.is_player {
-			enemy_count += 1
-		}
-	}
-	if enemy_count == 0 {
-		combat_fini()
 	}
 }
 
@@ -248,6 +225,29 @@ update_dust :: proc() {
 	}
 }
 
+add_screen_shake :: proc(intensity: int) {
+	game.combat_grid.screen_shake = max(game.combat_grid.screen_shake, intensity)
+}
+
 update_screen_shake :: proc() {
 	game.combat_grid.screen_shake = max(0, game.combat_grid.screen_shake - 8)
+}
+
+input_get_direction :: proc() -> Vec2 {
+	return {
+		int(rl.IsKeyDown(.D)) - int(rl.IsKeyDown(.A)),
+		int(rl.IsKeyDown(.S)) - int(rl.IsKeyDown(.W)),
+	}
+}
+
+// TODO: make this generic for any int array
+vec2_is_zero :: proc(v: Vec2) -> bool {
+	return v.x == 0 && v.y == 0
+}
+
+spawn_damage_indicator :: proc(x, y: int) {
+	append(
+		&game.combat_grid.damage_indicators,
+		DamageIndicator{x = x, y = y, life = 7, max_life = 7},
+	)
 }

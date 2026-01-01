@@ -105,18 +105,6 @@ Game :: struct {
 
 game: Game
 
-
-spawn_damage_indicator :: proc(x, y: int) {
-	append(
-		&game.combat_grid.damage_indicators,
-		DamageIndicator{x = x, y = y, life = 7, max_life = 7},
-	)
-}
-
-add_screen_shake :: proc(intensity: int) {
-	game.combat_grid.screen_shake = max(game.combat_grid.screen_shake, intensity)
-}
-
 init_game :: proc() {
 	game.player.x = ROOM_CENTRE
 	game.player.y = ROOM_CENTRE
