@@ -5,19 +5,19 @@ import "core:math/rand"
 import rl "vendor:raylib"
 
 CombatEntity :: struct {
-	x, y:               int,
-	is_player:          bool,
-	health:             int,
-	max_health:         int,
-	is_telegraphing:    bool,
-	target_x, target_y: int,
-	flash_timer:        int,
+	using position:  Vec2,
+	is_player:       bool,
+	health:          int,
+	max_health:      int,
+	is_telegraphing: bool,
+	target:          Vec2,
+	flash_timer:     int,
 }
 
 DamageIndicator :: struct {
-	x, y:     int,
-	life:     int,
-	max_life: int,
+	using position: Vec2,
+	life:           int,
+	max_life:       int,
 }
 
 CombatGrid :: struct {
@@ -60,9 +60,7 @@ combat_init :: proc(enemy_x, enemy_y: int) {
 combat_fini :: proc() {
 	game.mode = .EXPLORATION
 
-	defeated_enemy_x, defeated_enemy_y := game.player.x, game.player.y
-
-	game.world[defeated_enemy_y][defeated_enemy_x] = .GRASS
+	game.world[game.player.y][game.player.x] = .GRASS
 	game.combat.screen_shake = 0
 
 	clear(&game.combat.entities)
@@ -70,87 +68,84 @@ combat_fini :: proc() {
 	clear(&game.combat.damage_indicators)
 }
 
-combat_get_entity_at :: proc(x, y: int) -> ^CombatEntity {
+combat_get_entity_at :: proc(pos: Vec2) -> ^CombatEntity {
 	for &entity in game.combat.entities {
-		if entity.x == x && entity.y == y {
+		if entity.position == pos {
 			return &entity
 		}
 	}
 	return nil
 }
 
-combat_is_position_valid :: proc(x, y: int) -> bool {
-	return x >= 0 && x < game.combat.size && y >= 0 && y < game.combat.size
+combat_is_position_valid :: proc(pos: Vec2) -> bool {
+	return is_in_bounds(pos, game.combat.size)
 }
 
 update_enemy_ai :: proc(enemy: ^CombatEntity) {
-	player_entity: ^CombatEntity
+	player: ^CombatEntity
 	for &entity in game.combat.entities {
 		if entity.is_player {
-			player_entity = &entity
+			player = &entity
 			break
 		}
 	}
 
-	if player_entity == nil do return
+	if player == nil do return
 
 	if enemy.is_telegraphing {
-		target := combat_get_entity_at(enemy.target_x, enemy.target_y)
+		target := combat_get_entity_at(enemy.target)
 		if target != nil && target.is_player {
 			damage := 1 - inventory_get_count(.SHIELD)
 			if damage > 0 {
 				target.health -= damage
 			}
-			spawn_damage_indicator(enemy.target_x, enemy.target_y)
+			spawn_damage_indicator(enemy.target)
 			add_screen_shake(14)
 
-			audio.play(.CLICK)
+			audio.play_sound(.CLICK)
 		}
 		enemy.is_telegraphing = false
 
 		for i := len(game.combat.attack_indicators) - 1; i >= 0; i -= 1 {
 			indicator := game.combat.attack_indicators[i]
-			if indicator.x == enemy.target_x && indicator.y == enemy.target_y {
+			if indicator == enemy.target {
 				ordered_remove(&game.combat.attack_indicators, i)
 				break
 			}
 		}
 	} else {
-		dx := player_entity.x - enemy.x
-		dy := player_entity.y - enemy.y
+		dx := player.x - enemy.x
+		dy := player.y - enemy.y
 
 		if abs(dx) + abs(dy) <= 1 && rand.int31() % 2 == 0 {
-			if combat_is_position_valid(player_entity.x, player_entity.y) {
+			if combat_is_position_valid(player.position) {
 				enemy.is_telegraphing = true
-				enemy.target_x = player_entity.x
-				enemy.target_y = player_entity.y
-				append(&game.combat.attack_indicators, [2]int{player_entity.x, player_entity.y})
+				enemy.target = player.position
+				append(&game.combat.attack_indicators, [2]int{player.x, player.y})
 				return
 			}
 		}
 
 		if rand.int31() % 4 != 0 {
-			new_x := enemy.x
-			new_y := enemy.y
+			new := enemy
 
 			if abs(dx) > abs(dy) {
 				if dx > 0 {
-					new_x += 1
+					new.x += 1
 				} else if dx < 0 {
-					new_x -= 1
+					new.x -= 1
 				}
 			} else {
 				if dy > 0 {
-					new_y += 1
+					new.y += 1
 				} else if dy < 0 {
-					new_y -= 1
+					new.y -= 1
 				}
 			}
 
-			if combat_is_position_valid(new_x, new_y) &&
-			   combat_get_entity_at(new_x, new_y) == nil {
-				enemy.x = new_x
-				enemy.y = new_y
+			if combat_is_position_valid(new.position) &&
+			   combat_get_entity_at(new.position) == nil {
+				enemy.position = new.position
 			}
 		}
 	}
@@ -175,7 +170,7 @@ combat_update :: proc() {
 	game.move_timer -= 1
 	if game.move_timer > 0 do return
 
-	player_entity := combat_get_entity_at(-1, -1)
+	player_entity := combat_get_entity_at({-1, -1})
 	for &entity in game.combat.entities {
 		if entity.is_player {
 			player_entity = &entity
@@ -188,18 +183,18 @@ combat_update :: proc() {
 	if is_zero_vec2(dir) do return
 
 	target_pos := dir + Vec2{player_entity.x, player_entity.y}
-	if !combat_is_position_valid(target_pos.x, target_pos.y) do return
+	if !combat_is_position_valid(target_pos) do return
 
 	// attack
-	target := combat_get_entity_at(target_pos.x, target_pos.y)
+	target := combat_get_entity_at(target_pos)
 	if target != nil && !target.is_player {
 		damage := 1 + inventory_get_count(.SWORD)
 		target.health -= damage
 		target.flash_timer = 2
-		spawn_damage_indicator(target.x, target.y)
+		spawn_damage_indicator(target)
 		add_screen_shake(19)
 
-		audio.play(.HURT)
+		audio.play_sound(.HURT)
 
 		if target.health <= 0 {
 			for i := len(game.combat.entities) - 1; i >= 0; i -= 1 {
@@ -219,7 +214,7 @@ combat_update :: proc() {
 		player_entity.y = target_pos.y
 		game.move_timer = MOVE_DELAY
 
-		audio.play(.CLICK)
+		audio.play_sound(.CLICK)
 	}
 
 	for &enemy in game.combat.entities {
@@ -255,6 +250,6 @@ update_screen_shake :: proc() {
 	game.combat.screen_shake = max(0, game.combat.screen_shake - 8)
 }
 
-spawn_damage_indicator :: proc(x, y: int) {
-	append(&game.combat.damage_indicators, DamageIndicator{x = x, y = y, life = 7, max_life = 7})
+spawn_damage_indicator :: proc(pos: Vec2) {
+	append(&game.combat.damage_indicators, DamageIndicator{position = pos, life = 7, max_life = 7})
 }

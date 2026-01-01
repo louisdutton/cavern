@@ -17,7 +17,7 @@ Player :: struct {
 }
 
 Enemy :: struct {
-	x, y:             int,
+	using position:   Vec2,
 	direction:        int,
 	min_pos, max_pos: int,
 	axis:             u8,

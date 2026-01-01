@@ -2,10 +2,28 @@ package render
 
 import rl "vendor:raylib"
 
-CATPPUCCIN_BASE :: rl.Color{30, 30, 46, 255}
-CATPPUCCIN_SURFACE0 :: rl.Color{49, 50, 68, 255}
-CATPPUCCIN_OVERLAY0 :: rl.Color{108, 112, 134, 255}
-CATPPUCCIN_BLUE :: rl.Color{137, 180, 250, 255}
-CATPPUCCIN_GREEN :: rl.Color{166, 227, 161, 255}
-CATPPUCCIN_RED :: rl.Color{243, 139, 168, 255}
-CATPPUCCIN_LAVENDER :: rl.Color{180, 190, 254, 255}
+ThemeColor :: enum {
+	TRANSPARENT,
+	BASE,
+	SURFACE,
+	OVERLAY,
+	GREEN,
+	BLUE,
+	ORANGE,
+	WHITE,
+	TEAL,
+	RED,
+}
+
+theme := [ThemeColor]rl.Color {
+	.TRANSPARENT = {0, 0, 0, 0},
+	.BASE        = {30, 30, 46, 255},
+	.SURFACE     = {49, 50, 68, 255},
+	.OVERLAY     = {108, 112, 134, 255},
+	.BLUE        = {137, 180, 250, 255},
+	.RED         = {243, 139, 168, 255},
+	.TEAL        = {74, 144, 226, 255},
+	.ORANGE      = {255, 184, 108, 255},
+	.WHITE       = {255, 255, 255, 255},
+	.GREEN       = {166, 227, 161, 255},
+}

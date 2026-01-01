@@ -42,7 +42,7 @@ init :: proc() {
 	music_init()
 }
 
-play :: proc(kind: SoundKind, base_pitch: f32 = 1.0) {
+play_sound :: proc(kind: SoundKind, base_pitch: f32 = 1.0) {
 	final_pitch := base_pitch
 	rl.SetSoundPitch(sounds[kind], final_pitch)
 	rl.PlaySound(sounds[kind])

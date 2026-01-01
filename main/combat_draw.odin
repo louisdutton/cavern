@@ -1,7 +1,6 @@
 package main
 
 import "render"
-import rl "vendor:raylib"
 
 draw_combat_grid :: proc() {
 	grid_size := GAME_SIZE / game.combat.size
@@ -13,11 +12,10 @@ draw_combat_grid :: proc() {
 
 			for py in 0 ..< grid_size {
 				for px in 0 ..< grid_size {
-					pixel_x := i32(tile_x + px)
-					pixel_y := i32(tile_y + py)
-
-					col := (x + y) % 2 == 0 ? render.CATPPUCCIN_SURFACE0 : render.CATPPUCCIN_BASE
-					rl.DrawPixel(pixel_x, pixel_y, col)
+					render.draw_pixel(
+						{tile_x + px, tile_y + py},
+						(x + y) % 2 == 0 ? .SURFACE : .BASE,
+					)
 				}
 			}
 		}
@@ -33,7 +31,7 @@ draw_combat_entities :: proc() {
 
 		for py in 0 ..< grid_size {
 			for px in 0 ..< grid_size {
-				rl.DrawPixel(i32(pixel_x + px), i32(pixel_y + py), render.CATPPUCCIN_RED)
+				render.draw_pixel({pixel_x + px, pixel_y + py}, .RED)
 			}
 		}
 	}
@@ -42,40 +40,31 @@ draw_combat_entities :: proc() {
 		pixel_x := damage.x * grid_size
 		pixel_y := damage.y * grid_size
 		alpha := f32(damage.life) / f32(damage.max_life)
-		damage_color := rl.ColorAlpha(render.CATPPUCCIN_RED, alpha)
 
 		for py in 0 ..< grid_size {
 			for px in 0 ..< grid_size {
 				if (px + py) % 2 == 0 {
-					rl.DrawPixel(i32(pixel_x + px), i32(pixel_y + py), damage_color)
+					render.draw_pixel_alpha({pixel_x + px, pixel_y + py}, .RED, alpha)
 				}
 			}
 		}
 	}
 
 	for entity in game.combat.entities {
-		pixel_x := entity.x * grid_size
-		pixel_y := entity.y * grid_size
+		pos := entity.position * grid_size
 
 		if entity.is_player {
-			render.draw_combat_sprite(&render.combat_player_sprite, pixel_x, pixel_y, 0)
+			render.draw_combat_sprite(&render.combat_player_sprite, pos)
 
 			for i in 0 ..< entity.health {
-				heart_x := i32(pixel_x + i * 2)
-				heart_y := i32(pixel_y - 3)
-				if heart_x >= 0 && heart_x < GAME_SIZE && heart_y >= 0 {
-					rl.DrawPixel(heart_x, heart_y, render.CATPPUCCIN_GREEN)
+				heart := pos + {i * 2, -3}
+				if heart.x >= 0 && heart.x < GAME_SIZE && heart.y >= 0 {
+					render.draw_pixel(heart, .GREEN)
 				}
 			}
 		} else {
 			flash_white := entity.flash_timer > 0
-			render.draw_combat_sprite(
-				&render.combat_enemy_sprite,
-				pixel_x,
-				pixel_y,
-				0,
-				flash_white,
-			)
+			render.draw_combat_sprite(&render.combat_enemy_sprite, pos, flash_white)
 		}
 	}
 }

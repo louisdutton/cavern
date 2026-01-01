@@ -24,11 +24,15 @@ Tile :: enum {
 }
 
 Room :: struct {
-	id:           int,
-	x, y:         int,
-	connections:  [Direction]bool,
-	locked_exits: [Direction]bool,
-	tiles:        [ROOM_SIZE][ROOM_SIZE]Tile,
+	id:             int,
+	using position: Vec2,
+	connections:    [Direction]bool,
+	locked_exits:   [Direction]bool,
+	tiles:          [ROOM_SIZE][ROOM_SIZE]Tile,
+}
+
+rand_vec2 :: proc(n: int) -> Vec2 {
+	return {rand.int_max(n), rand.int_max(n)}
 }
 
 generate_floor :: proc() {
@@ -42,43 +46,35 @@ generate_floor :: proc() {
 		}
 	}
 
-	start_x, start_y: int
-	end_x, end_y: int
-
-	start_x = rand.int_max(FLOOR_SIZE)
-	start_y = rand.int_max(FLOOR_SIZE)
-
-	end_x = rand.int_max(FLOOR_SIZE)
-	end_y = rand.int_max(FLOOR_SIZE)
+	start := rand_vec2(FLOOR_SIZE)
+	end := rand_vec2(FLOOR_SIZE)
 	min_distance := 3
-	for (end_x == start_x && end_y == start_y) ||
-	    (abs(end_x - start_x) + abs(end_y - start_y) < min_distance) {
-		end_x = rand.int_max(FLOOR_SIZE)
-		end_y = rand.int_max(FLOOR_SIZE)
+	for (end.x == start.x && end.y == start.y) ||
+	    (abs(end.x - start.x) + abs(end.y - start.y) < min_distance) {
+		end = rand_vec2(FLOOR_SIZE)
 	}
 
-	create_path_start_to_end(start_x, start_y, end_x, end_y)
+	create_path_start_to_end(start, end)
 
 	for y in 0 ..< FLOOR_SIZE {
 		for x in 0 ..< FLOOR_SIZE {
-			if room_exists(x, y) {
+			if room_exists({x, y}) {
 				room := &game.floor_layout[y][x]
-				generate_room_tiles(room, x, y, start_x, start_y, end_x, end_y)
-				generate_room_enemies(room, x, y, start_x, start_y, end_x, end_y)
-				place_room_locked_doors(room, x, y)
+				generate_room_tiles(room, start, end)
+				generate_room_enemies(room, start, end)
+				place_room_locked_doors(room)
 			}
 		}
 	}
 
-	place_lock_and_key_on_path(start_x, start_y, end_x, end_y)
-	place_sword_and_shield(start_x, start_y, end_x, end_y)
-
-	game.room_coords = {start_x, start_y}
+	place_lock_and_key_on_path(start, end)
+	place_sword_and_shield(start, end)
+	game.room_coords = start
 }
 
-room_exists :: proc(x, y: int) -> bool {
-	if x < 0 || x >= FLOOR_SIZE || y < 0 || y >= FLOOR_SIZE do return false
-	room := &game.floor_layout[y][x]
+room_exists :: proc(pos: Vec2) -> bool {
+	if !is_in_bounds(pos, FLOOR_SIZE) do return false
+	room := &game.floor_layout[pos.y][pos.x]
 	return(
 		room.connections[.NORTH] ||
 		room.connections[.SOUTH] ||
@@ -87,91 +83,85 @@ room_exists :: proc(x, y: int) -> bool {
 	)
 }
 
-create_path_start_to_end :: proc(start_x, start_y, end_x, end_y: int) {
-	current_x, current_y := start_x, start_y
+create_path_start_to_end :: proc(start, end: Vec2) {
+	current := start
 
-	for current_x != end_x {
-		if current_x < end_x {
-			game.floor_layout[current_y][current_x].connections[.EAST] = true
-			game.floor_layout[current_y][current_x + 1].connections[.WEST] = true
-			current_x += 1
+	for current.x != end.x {
+		if current.x < end.x {
+			game.floor_layout[current.y][current.x].connections[.EAST] = true
+			game.floor_layout[current.y][current.x + 1].connections[.WEST] = true
+			current.x += 1
 		} else {
-			game.floor_layout[current_y][current_x].connections[.WEST] = true
-			game.floor_layout[current_y][current_x - 1].connections[.EAST] = true
-			current_x -= 1
+			game.floor_layout[current.y][current.x].connections[.WEST] = true
+			game.floor_layout[current.y][current.x - 1].connections[.EAST] = true
+			current.x -= 1
 		}
 	}
 
-	for current_y != end_y {
-		if current_y < end_y {
-			game.floor_layout[current_y][current_x].connections[.SOUTH] = true
-			game.floor_layout[current_y + 1][current_x].connections[.NORTH] = true
-			current_y += 1
+	for current.y != end.y {
+		if current.y < end.y {
+			game.floor_layout[current.y][current.x].connections[.SOUTH] = true
+			game.floor_layout[current.y + 1][current.x].connections[.NORTH] = true
+			current.y += 1
 		} else {
-			game.floor_layout[current_y][current_x].connections[.NORTH] = true
-			game.floor_layout[current_y - 1][current_x].connections[.SOUTH] = true
-			current_y -= 1
+			game.floor_layout[current.y][current.x].connections[.NORTH] = true
+			game.floor_layout[current.y - 1][current.x].connections[.SOUTH] = true
+			current.y -= 1
 		}
 	}
 }
 
-place_lock_and_key_on_path :: proc(start_x, start_y, end_x, end_y: int) {
-	key_x := start_x + (end_x - start_x) / 2
-	key_y := start_y + (end_y - start_y) / 2
+place_lock_and_key_on_path :: proc(start, end: Vec2) {
+	key := start + (end - start) / 2
 
-	if key_x == start_x && key_y == start_y {
-		if end_x != start_x {
-			key_x = start_x + 1
+	if key == start {
+		if end.x != start.x {
+			key = start.x + 1
 		} else {
-			key_y = start_y + 1
+			key.y = start.y + 1
 		}
 	}
 
-	if key_x == end_x && key_y == end_y {
-		if end_x != start_x {
-			key_x = end_x - 1
+	if key == end {
+		if end.x != start.x {
+			key = end.x - 1
 		} else {
-			key_y = end_y - 1
+			key.y = end.y - 1
 		}
 	}
 
-	key_room := &game.floor_layout[key_y][key_x]
+	key_room := &game.floor_layout[key.y][key.x]
 	key_room.tiles[ROOM_CENTRE][ROOM_CENTRE - 1] = .KEY
 
-	lock_x := key_x
-	lock_y := key_y
-	if key_x < end_x {
-		lock_x += 1
-		game.floor_layout[key_y][key_x].locked_exits[.EAST] = true
-		game.floor_layout[key_y][lock_x].locked_exits[.WEST] = true
-	} else if key_x > end_x {
-		lock_x -= 1
-		game.floor_layout[key_y][key_x].locked_exits[.WEST] = true
-		game.floor_layout[key_y][lock_x].locked_exits[.EAST] = true
-	} else if key_y < end_y {
-		lock_y += 1
-		game.floor_layout[key_y][key_x].locked_exits[.SOUTH] = true
-		game.floor_layout[lock_y][key_x].locked_exits[.NORTH] = true
-	} else if key_y > end_y {
-		lock_y -= 1
-		game.floor_layout[key_y][key_x].locked_exits[.NORTH] = true
-		game.floor_layout[lock_y][key_x].locked_exits[.SOUTH] = true
+	lock := key
+	if key.x < end.x {
+		lock.x += 1
+		game.floor_layout[key.y][key.x].locked_exits[.EAST] = true
+		game.floor_layout[key.y][lock.x].locked_exits[.WEST] = true
+	} else if key.x > end.x {
+		lock.x -= 1
+		game.floor_layout[key.y][key.x].locked_exits[.WEST] = true
+		game.floor_layout[key.y][lock.x].locked_exits[.EAST] = true
+	} else if key.y < end.y {
+		lock.y += 1
+		game.floor_layout[key.y][key.x].locked_exits[.SOUTH] = true
+		game.floor_layout[lock.y][key.x].locked_exits[.NORTH] = true
+	} else if key.y > end.y {
+		lock.y -= 1
+		game.floor_layout[key.y][key.x].locked_exits[.NORTH] = true
+		game.floor_layout[lock.y][key.x].locked_exits[.SOUTH] = true
 	}
 }
 
-place_sword_and_shield :: proc(start_x, start_y, end_x, end_y: int) {
+place_sword_and_shield :: proc(start, end: Vec2) {
 	valid_rooms: [dynamic]Vec2
 	defer delete(valid_rooms)
 
 	for y in 0 ..< FLOOR_SIZE {
 		for x in 0 ..< FLOOR_SIZE {
-			if room_exists(x, y) {
-				is_start := x == start_x && y == start_y
-				is_end := x == end_x && y == end_y
-
-				if !is_start && !is_end {
-					append(&valid_rooms, Vec2{x, y})
-				}
+			p := Vec2{x, y}
+			if room_exists(p) && p != start && p != end {
+				append(&valid_rooms, p)
 			}
 		}
 	}
@@ -181,13 +171,12 @@ place_sword_and_shield :: proc(start_x, start_y, end_x, end_y: int) {
 		sword_room_pos := valid_rooms[sword_room_idx]
 		sword_room := &game.floor_layout[sword_room_pos.y][sword_room_pos.x]
 
-		sword_x := 1 + rand.int_max(ROOM_SIZE - 2)
-		sword_y := 1 + rand.int_max(ROOM_SIZE - 2)
-		for sword_room.tiles[sword_y][sword_x] != .GRASS {
-			sword_x = 1 + rand.int_max(ROOM_SIZE - 2)
-			sword_y = 1 + rand.int_max(ROOM_SIZE - 2)
+		// TODO: support supplying min to rand_vec2()
+		sword := rand_vec2(ROOM_SIZE - 2) + {1, 1}
+		for sword_room.tiles[sword.y][sword.x] != .GRASS {
+			sword = rand_vec2(ROOM_SIZE - 2) + {1, 1}
 		}
-		sword_room.tiles[sword_y][sword_x] = .SWORD
+		sword_room.tiles[sword.y][sword.x] = .SWORD
 
 		shield_room_idx: int
 		for shield_room_idx == sword_room_idx {
@@ -196,18 +185,16 @@ place_sword_and_shield :: proc(start_x, start_y, end_x, end_y: int) {
 		shield_room_pos := valid_rooms[shield_room_idx]
 		shield_room := &game.floor_layout[shield_room_pos.y][shield_room_pos.x]
 
-		shield_x := 1 + rand.int_max(ROOM_SIZE - 2)
-		shield_y := 1 + rand.int_max(ROOM_SIZE - 2)
-		for shield_room.tiles[shield_y][shield_x] != .GRASS {
-			shield_x = 1 + rand.int_max(ROOM_SIZE - 2)
-			shield_y = 1 + rand.int_max(ROOM_SIZE - 2)
+		shield := rand_vec2(ROOM_SIZE - 2) + {1, 1}
+		for shield_room.tiles[shield.y][shield.x] != .GRASS {
+			shield = rand_vec2(ROOM_SIZE - 2) + {1, 1}
 		}
-		shield_room.tiles[shield_y][shield_x] = .SHIELD
+		shield_room.tiles[shield.y][shield.x] = .SHIELD
 	}
 }
 
 
-generate_room_tiles :: proc(room: ^Room, room_x, room_y, start_x, start_y, end_x, end_y: int) {
+generate_room_tiles :: proc(room: ^Room, start, end: Vec2) {
 	for y in 0 ..< ROOM_SIZE {
 		for x in 0 ..< ROOM_SIZE {
 			room.tiles[y][x] = .GRASS
@@ -239,12 +226,10 @@ generate_room_tiles :: proc(room: ^Room, room_x, room_y, start_x, start_y, end_x
 		room.tiles[ROOM_CENTRE][ROOM_SIZE - 1] = .GRASS
 	}
 
-	is_start := room_x == start_x && room_y == start_y
-	is_end := room_x == end_x && room_y == end_y
-
-	if is_end {
-		room.tiles[ROOM_CENTRE][ROOM_CENTRE] = .EXIT
-	} else if !is_start {
+	switch room {
+	case start: // no-op
+	case end: room.tiles[ROOM_CENTRE][ROOM_CENTRE] = .EXIT
+	case:
 		boulder_count := 2 + (room.id % 3)
 		for _ in 0 ..< boulder_count {
 			boulder_x := 1 + rand.int_max(ROOM_SIZE - 2)
@@ -254,12 +239,11 @@ generate_room_tiles :: proc(room: ^Room, room_x, room_y, start_x, start_y, end_x
 			}
 		}
 	}
-
 }
 
-generate_room_enemies :: proc(room: ^Room, room_x, room_y, start_x, start_y, end_x, end_y: int) {
-	is_start := room_x == start_x && room_y == start_y
-	is_end := room_x == end_x && room_y == end_y
+generate_room_enemies :: proc(room: ^Room, start, end: Vec2) {
+	is_start := room.position == start
+	is_end := room.position == end
 
 	if !is_start && !is_end && rand.int_max(3) == 0 {
 		enemy_count := 2 + (room.id % 3)
@@ -273,8 +257,8 @@ generate_room_enemies :: proc(room: ^Room, room_x, room_y, start_x, start_y, end
 	}
 }
 
-place_room_locked_doors :: proc(room: ^Room, room_x, room_y: int) {
-	door_key := [3]int{room_x, room_y, 0}
+place_room_locked_doors :: proc(room: ^Room) {
+	door_key := [3]int{room.x, room.y, 0}
 
 	if room.locked_exits[.NORTH] {
 		door_key.z = int(Direction.NORTH)

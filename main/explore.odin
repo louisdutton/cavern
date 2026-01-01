@@ -4,43 +4,36 @@ import "audio"
 import "core:math/rand"
 import rl "vendor:raylib"
 
-is_tile_walkable :: proc(x, y: int) -> bool {
-	assert(x < ROOM_SIZE && y < ROOM_SIZE)
+is_in_bounds :: proc(pos: Vec2, max: int = ROOM_SIZE) -> bool {
+	return pos.x < max && pos.y < max && pos.x >= 0 && pos.y >= 0
+}
+
+is_tile_walkable :: proc(pos: Vec2) -> bool {
+	assert(is_in_bounds(pos))
 	return(
-		game.world[y][x] != .STONE &&
-		game.world[y][x] != .LOCKED_DOOR &&
-		game.world[y][x] != .BOULDER \
+		game.world[pos.y][pos.x] != .STONE &&
+		game.world[pos.y][pos.x] != .LOCKED_DOOR &&
+		game.world[pos.y][pos.x] != .BOULDER \
 	)
 }
 
-can_unlock_door :: proc(x, y: int) -> bool {
-	return game.world[y][x] == .LOCKED_DOOR && len(game.inventory) > 0
+can_unlock_door :: proc(pos: Vec2) -> bool {
+	return game.world[pos.y][pos.x] == .LOCKED_DOOR && len(game.inventory) > 0
 }
 
-can_push_boulder :: proc(boulder_x, boulder_y, push_dir_x, push_dir_y: int) -> bool {
-	if game.world[boulder_y][boulder_x] != .BOULDER do return false
-
-	new_boulder_x := boulder_x + push_dir_x
-	new_boulder_y := boulder_y + push_dir_y
-
-	if new_boulder_x < 0 ||
-	   new_boulder_x >= ROOM_SIZE ||
-	   new_boulder_y < 0 ||
-	   new_boulder_y >= ROOM_SIZE {
-		return false
-	}
-
-	return game.world[new_boulder_y][new_boulder_x] == .GRASS
+can_push_boulder :: proc(boulder, dir: Vec2) -> bool {
+	if game.world[boulder.y][boulder.x] != .BOULDER do return false
+	target := boulder + dir
+	return is_in_bounds(target) && game.world[target.y][target.x] == .GRASS
 }
 
-push_boulder :: proc(boulder_x, boulder_y, push_dir_x, push_dir_y: int) {
-	if !can_push_boulder(boulder_x, boulder_y, push_dir_x, push_dir_y) do return
+push_boulder :: proc(boulder, push_dir: Vec2) {
+	if !can_push_boulder(boulder, push_dir) do return
 
-	new_boulder_x := boulder_x + push_dir_x
-	new_boulder_y := boulder_y + push_dir_y
+	new_boulder := boulder + push_dir
 
-	game.world[boulder_y][boulder_x] = .GRASS
-	game.world[new_boulder_y][new_boulder_x] = .BOULDER
+	game.world[boulder.y][boulder.x] = .GRASS
+	game.world[new_boulder.y][new_boulder.x] = .BOULDER
 }
 
 get_door_direction :: proc(x, y: int) -> int {
@@ -138,7 +131,7 @@ update_player :: proc() {
 		game.room_coords.y += 1
 		game.player.y = 0
 	} else {
-		if is_tile_walkable(new.x, new.y) {
+		if is_tile_walkable(new) {
 			if game.world[new.y][new.x] == .KEY ||
 			   game.world[new.y][new.x] == .SWORD ||
 			   game.world[new.y][new.x] == .SHIELD {
@@ -162,7 +155,7 @@ update_player :: proc() {
 			game.player.y = new.y
 			game.move_timer = MOVE_DELAY
 
-			audio.play(.CLICK)
+			audio.play_sound(.CLICK)
 
 		} else if game.world[new.y][new.x] == .SECRET_WALL {
 			game.world[new.y][new.x] = .GRASS
@@ -190,21 +183,21 @@ update_player :: proc() {
 			}
 			game.move_timer = MOVE_DELAY
 
-			audio.play(.DESTROY)
+			audio.play_sound(.DESTROY)
 
 			if new.x == 0 || new.x == ROOM_SIZE - 1 || new.y == 0 || new.y == ROOM_SIZE - 1 {
 				load_current_room()
 			}
 
-		} else if can_unlock_door(new.x, new.y) {
+		} else if can_unlock_door(new) {
 			ordered_remove(&game.inventory, len(game.inventory) - 1)
 
 			door_direction := get_door_direction(new.x, new.y)
 			if door_direction != -1 {
 				unlock_door_connection(Direction(door_direction))
 				add_screen_shake(15)
-				audio.play(.UNLOCK)
-				audio.play(.DESTROY)
+				audio.play_sound(.UNLOCK)
+				audio.play_sound(.DESTROY)
 			}
 
 			inventory_update(game.player.position)
@@ -214,11 +207,10 @@ update_player :: proc() {
 			game.move_timer = MOVE_DELAY
 
 		} else if game.world[new.y][new.x] == .BOULDER {
-			push_dir_x := new.x - game.player.x
-			push_dir_y := new.y - game.player.y
+			push_dir := new - game.player.position
 
-			if can_push_boulder(new.x, new.y, push_dir_x, push_dir_y) {
-				push_boulder(new.x, new.y, push_dir_x, push_dir_y)
+			if can_push_boulder(new, push_dir) {
+				push_boulder(new, push_dir)
 
 				inventory_update(game.player.x)
 
@@ -226,7 +218,7 @@ update_player :: proc() {
 				game.player.y = new.y
 				game.move_timer = MOVE_DELAY
 
-				audio.play(.METAL)
+				audio.play_sound(.METAL)
 			}
 		}
 		return

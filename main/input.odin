@@ -9,6 +9,7 @@ Direction :: enum {
 	WEST,
 }
 
+// FIXME: disable diagonal movement
 input_get_direction :: proc() -> Vec2 {
 	return {
 		int(rl.IsKeyDown(.D)) - int(rl.IsKeyDown(.A)),

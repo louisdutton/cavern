@@ -1,19 +1,20 @@
 package main
 
+import "core:container/rbtree"
 import "render"
 import rl "vendor:raylib"
 
 tile_to_sprite: [Tile]^render.Sprite = {
-	.GRASS       = &render.grass_sprite,
-	.STONE       = &render.stone_sprite,
-	.BOULDER     = &render.boulder_sprite,
-	.EXIT        = &render.exit_sprite,
-	.KEY         = &render.key_sprite,
-	.SWORD       = &render.sword_sprite,
-	.SHIELD      = &render.shield_sprite,
-	.LOCKED_DOOR = &render.locked_door_sprite,
-	.ENEMY       = &render.enemy_sprite,
-	.SECRET_WALL = &render.secret_wall_sprite,
+	.GRASS       = &render.spr_grass,
+	.STONE       = &render.spr_stone,
+	.BOULDER     = &render.spr_boulder,
+	.EXIT        = &render.spr_exit,
+	.KEY         = &render.spr_key,
+	.SWORD       = &render.spr_sword,
+	.SHIELD      = &render.spr_shield,
+	.LOCKED_DOOR = &render.spr_locked_door,
+	.ENEMY       = &render.spr_enemy,
+	.SECRET_WALL = &render.spr_secret_wall,
 }
 
 draw_world :: proc() {
@@ -27,10 +28,12 @@ draw_world :: proc() {
 }
 
 draw_player :: proc() {
-	render.draw_sprite(&render.player_sprite, game.player.position)
+	render.draw_sprite(&render.spr_player, game.player.position)
 }
 
 draw_floor_number :: proc() {
+	NUMBER_ALPHA :: 0.05
+
 	floor_str := [16]u8{}
 	floor_len := 0
 	num := game.floor_number
@@ -63,24 +66,23 @@ draw_floor_number :: proc() {
 
 	for i in 0 ..< floor_len {
 		digit := floor_str[i]
-		digit_x := start_x + i * digit_width
-		digit_y := start_y
+		digit_pos := Vec2{start_x + i * digit_width, start_y}
 
 		for py in 0 ..< digit_height {
 			for px in 0 ..< digit_width {
-				sprite_x := px * render.TILE_SIZE / digit_width
-				sprite_y := py * render.TILE_SIZE / digit_height
+				sprite := Vec2 {
+					px * render.TILE_SIZE / digit_width,
+					py * render.TILE_SIZE / digit_height,
+				}
+				if sprite.x >= render.TILE_SIZE || sprite.y >= render.TILE_SIZE do continue
 
-				if sprite_x < render.TILE_SIZE && sprite_y < render.TILE_SIZE {
-					color_index := render.digit_sprites[digit][sprite_y][sprite_x]
-					if color_index != 0 {
-						for tile_py in 0 ..< render.TILE_SIZE {
-							for tile_px in 0 ..< render.TILE_SIZE {
-								pixel_x := i32((digit_x + px) * render.TILE_SIZE + tile_px)
-								pixel_y := i32((digit_y + py) * render.TILE_SIZE + tile_py)
-								rl.DrawPixel(pixel_x, pixel_y, low_alpha_white)
-							}
-						}
+				color_index := render.digit_sprites[digit][sprite.y][sprite.x]
+				if color_index == .TRANSPARENT do continue
+
+				for ty in 0 ..< render.TILE_SIZE {
+					for tx in 0 ..< render.TILE_SIZE {
+						pos := (digit_pos + {px, py}) * render.TILE_SIZE + {tx, ty}
+						render.draw_pixel_alpha(pos, .WHITE, NUMBER_ALPHA)
 					}
 				}
 			}
