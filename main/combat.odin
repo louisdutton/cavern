@@ -249,18 +249,6 @@ update_screen_shake :: proc() {
 	game.combat.screen_shake = max(0, game.combat.screen_shake - 8)
 }
 
-input_get_direction :: proc() -> Vec2 {
-	return {
-		int(rl.IsKeyDown(.D)) - int(rl.IsKeyDown(.A)),
-		int(rl.IsKeyDown(.S)) - int(rl.IsKeyDown(.W)),
-	}
-}
-
-// TODO: make this generic for any int array
-is_zero_vec2 :: proc(v: Vec2) -> bool {
-	return v.x == 0 && v.y == 0
-}
-
 spawn_damage_indicator :: proc(x, y: int) {
 	append(&game.combat.damage_indicators, DamageIndicator{x = x, y = y, life = 7, max_life = 7})
 }

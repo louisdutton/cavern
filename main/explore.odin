@@ -115,61 +115,40 @@ unlock_door_connection :: proc(direction: Direction) {
 	}
 }
 
-player_get_input :: proc() -> (int, int, bool) {
-	new_x := game.player.x
-	new_y := game.player.y
-	moved := false
-
-	if rl.IsKeyDown(.W) {
-		new_y -= 1
-		moved = true
-	} else if rl.IsKeyDown(.S) {
-		new_y += 1
-		moved = true
-	} else if rl.IsKeyDown(.A) {
-		new_x -= 1
-		moved = true
-	} else if rl.IsKeyDown(.D) {
-		new_x += 1
-		moved = true
-	}
-
-	return new_x, new_y, moved
-}
-
 update_player :: proc() {
 	game.move_timer -= 1
 	if game.move_timer > 0 do return
 
-	new_x, new_y, moved := player_get_input()
-	if !moved do return
+	dir := input_get_direction()
+	if is_zero_vec2(dir) do return
+	new := dir + {game.player.x, game.player.y}
 
 	room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
 
-	if new_x >= ROOM_SIZE && room.connections[.EAST] {
+	if new.x >= ROOM_SIZE && room.connections[.EAST] {
 		game.room_coords.x += 1
 		game.player.x = 0
-	} else if new_x < 0 && room.connections[.WEST] {
+	} else if new.x < 0 && room.connections[.WEST] {
 		game.room_coords.x -= 1
 		game.player.x = ROOM_SIZE - 1
-	} else if new_y < 0 && room.connections[.NORTH] {
+	} else if new.y < 0 && room.connections[.NORTH] {
 		game.room_coords.y -= 1
 		game.player.y = ROOM_SIZE - 1
-	} else if new_y >= ROOM_SIZE && room.connections[.SOUTH] {
+	} else if new.y >= ROOM_SIZE && room.connections[.SOUTH] {
 		game.room_coords.y += 1
 		game.player.y = 0
 	} else {
-		if is_tile_walkable(new_x, new_y) {
-			if game.world[new_y][new_x] == .KEY ||
-			   game.world[new_y][new_x] == .SWORD ||
-			   game.world[new_y][new_x] == .SHIELD {
-				kind := game.world[new_y][new_x]
-				game.world[new_y][new_x] = .GRASS
+		if is_tile_walkable(new.x, new.y) {
+			if game.world[new.y][new.x] == .KEY ||
+			   game.world[new.y][new.x] == .SWORD ||
+			   game.world[new.y][new.x] == .SHIELD {
+				kind := game.world[new.y][new.x]
+				game.world[new.y][new.x] = .GRASS
 				append(
 					&game.inventory,
 					Item {
-						x = new_x,
-						y = new_y,
+						x = new.x,
+						y = new.y,
 						target_x = game.player.x,
 						target_y = game.player.y,
 						kind = kind,
@@ -179,48 +158,48 @@ update_player :: proc() {
 
 			update_following_items(game.player.x, game.player.y)
 
-			game.player.x = new_x
-			game.player.y = new_y
+			game.player.x = new.x
+			game.player.y = new.y
 			game.move_timer = MOVE_DELAY
 
 			audio.play(.CLICK)
 
-		} else if game.world[new_y][new_x] == .SECRET_WALL {
-			game.world[new_y][new_x] = .GRASS
+		} else if game.world[new.y][new.x] == .SECRET_WALL {
+			game.world[new.y][new.x] = .GRASS
 			add_screen_shake(20)
 
-			if new_x == 0 && game.room_coords.x > 0 {
+			if new.x == 0 && game.room_coords.x > 0 {
 				game.room_coords.x -= 1
 				game.player.x = ROOM_SIZE - 1
-				game.player.y = new_y
-			} else if new_x == ROOM_SIZE - 1 && game.room_coords.x < FLOOR_SIZE - 1 {
+				game.player.y = new.y
+			} else if new.x == ROOM_SIZE - 1 && game.room_coords.x < FLOOR_SIZE - 1 {
 				game.room_coords.x += 1
 				game.player.x = 0
-				game.player.y = new_y
-			} else if new_y == 0 && game.room_coords.y > 0 {
+				game.player.y = new.y
+			} else if new.y == 0 && game.room_coords.y > 0 {
 				game.room_coords.y -= 1
-				game.player.x = new_x
+				game.player.x = new.x
 				game.player.y = ROOM_SIZE - 1
-			} else if new_y == ROOM_SIZE - 1 && game.room_coords.y < FLOOR_SIZE - 1 {
+			} else if new.y == ROOM_SIZE - 1 && game.room_coords.y < FLOOR_SIZE - 1 {
 				game.room_coords.y += 1
-				game.player.x = new_x
+				game.player.x = new.x
 				game.player.y = 0
 			} else {
-				game.player.x = new_x
-				game.player.y = new_y
+				game.player.x = new.x
+				game.player.y = new.y
 			}
 			game.move_timer = MOVE_DELAY
 
 			audio.play(.DESTROY)
 
-			if new_x == 0 || new_x == ROOM_SIZE - 1 || new_y == 0 || new_y == ROOM_SIZE - 1 {
+			if new.x == 0 || new.x == ROOM_SIZE - 1 || new.y == 0 || new.y == ROOM_SIZE - 1 {
 				load_current_room()
 			}
 
-		} else if can_unlock_door(new_x, new_y) {
+		} else if can_unlock_door(new.x, new.y) {
 			ordered_remove(&game.inventory, len(game.inventory) - 1)
 
-			door_direction := get_door_direction(new_x, new_y)
+			door_direction := get_door_direction(new.x, new.y)
 			if door_direction != -1 {
 				unlock_door_connection(Direction(door_direction))
 				add_screen_shake(15)
@@ -230,21 +209,21 @@ update_player :: proc() {
 
 			update_following_items(game.player.x, game.player.y)
 
-			game.player.x = new_x
-			game.player.y = new_y
+			game.player.x = new.x
+			game.player.y = new.y
 			game.move_timer = MOVE_DELAY
 
-		} else if game.world[new_y][new_x] == .BOULDER {
-			push_dir_x := new_x - game.player.x
-			push_dir_y := new_y - game.player.y
+		} else if game.world[new.y][new.x] == .BOULDER {
+			push_dir_x := new.x - game.player.x
+			push_dir_y := new.y - game.player.y
 
-			if can_push_boulder(new_x, new_y, push_dir_x, push_dir_y) {
-				push_boulder(new_x, new_y, push_dir_x, push_dir_y)
+			if can_push_boulder(new.x, new.y, push_dir_x, push_dir_y) {
+				push_boulder(new.x, new.y, push_dir_x, push_dir_y)
 
 				update_following_items(game.player.x, game.player.y)
 
-				game.player.x = new_x
-				game.player.y = new_y
+				game.player.x = new.x
+				game.player.y = new.y
 				game.move_timer = MOVE_DELAY
 
 				audio.play(.METAL)
