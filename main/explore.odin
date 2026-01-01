@@ -156,7 +156,7 @@ update_player :: proc() {
 				)
 			}
 
-			update_following_items(game.player.x, game.player.y)
+			inventory_update(game.player.position)
 
 			game.player.x = new.x
 			game.player.y = new.y
@@ -207,7 +207,7 @@ update_player :: proc() {
 				audio.play(.DESTROY)
 			}
 
-			update_following_items(game.player.x, game.player.y)
+			inventory_update(game.player.position)
 
 			game.player.x = new.x
 			game.player.y = new.y
@@ -220,7 +220,7 @@ update_player :: proc() {
 			if can_push_boulder(new.x, new.y, push_dir_x, push_dir_y) {
 				push_boulder(new.x, new.y, push_dir_x, push_dir_y)
 
-				update_following_items(game.player.x, game.player.y)
+				inventory_update(game.player.x)
 
 				game.player.x = new.x
 				game.player.y = new.y
@@ -233,7 +233,7 @@ update_player :: proc() {
 	}
 
 	game.move_timer = MOVE_DELAY
-	update_following_items(game.player.x, game.player.y)
+	inventory_update(game.player.position)
 	load_current_room()
 }
 
@@ -275,42 +275,4 @@ check_player_enemy_collision :: proc() -> bool {
 		return true
 	}
 	return false
-}
-
-get_item_count :: proc(kind: Tile) -> int {
-	count := 0
-	for item in game.inventory {
-		if item.kind == kind {
-			count += 1
-		}
-	}
-	return count
-}
-
-get_attack_bonus :: proc() -> int {
-	return get_item_count(.SWORD)
-}
-
-get_defense_bonus :: proc() -> int {
-	return get_item_count(.SHIELD)
-}
-
-update_following_items :: proc(player_x, player_y: int) {
-	if len(game.inventory) == 0 do return
-
-	prev_x := player_x
-	prev_y := player_y
-
-	for i in 0 ..< len(game.inventory) {
-		item := &game.inventory[i]
-
-		old_x := item.x
-		old_y := item.y
-
-		item.x = prev_x
-		item.y = prev_y
-
-		prev_x = old_x
-		prev_y = old_y
-	}
 }

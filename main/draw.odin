@@ -21,20 +21,13 @@ draw_world :: proc() {
 		for x in 0 ..< ROOM_SIZE {
 			tile := game.world[y][x]
 			sprite := tile_to_sprite[tile]
-			render.draw_sprite(sprite, x, y)
+			render.draw_sprite(sprite, {x, y})
 		}
 	}
 }
 
 draw_player :: proc() {
-	render.draw_sprite(&render.player_sprite, game.player.x, game.player.y)
-}
-
-draw_following_items :: proc() {
-	for item in game.inventory {
-		sprite := tile_to_sprite[item.kind]
-		render.draw_sprite(sprite, item.x, item.y)
-	}
+	render.draw_sprite(&render.player_sprite, game.player.position)
 }
 
 draw_floor_number :: proc() {

@@ -8,9 +8,9 @@ COMBAT_TILE_SIZE :: 8
 Sprite :: [TILE_SIZE][TILE_SIZE]u8
 CombatSprite :: [COMBAT_TILE_SIZE][COMBAT_TILE_SIZE]u8
 
-draw_sprite :: proc(sprite: ^Sprite, x, y: int, transparent_index: u8 = 0) {
-	x0 := x * TILE_SIZE
-	y0 := y * TILE_SIZE
+draw_sprite :: proc(sprite: ^Sprite, position: [2]int, transparent_index: u8 = 0) {
+	x0 := position.x * TILE_SIZE
+	y0 := position.y * TILE_SIZE
 
 	for py in 0 ..< TILE_SIZE {
 		for px in 0 ..< TILE_SIZE {

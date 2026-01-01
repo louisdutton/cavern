@@ -13,7 +13,7 @@ MOVE_DELAY :: 2
 ENEMY_DELAY :: 7
 
 Player :: struct {
-	x, y: int,
+	using position: Vec2,
 }
 
 Enemy :: struct {
@@ -95,7 +95,7 @@ main :: proc() {
 			render.begin()
 			draw_world()
 			draw_floor_number()
-			draw_following_items()
+			inventory_draw()
 			draw_player()
 			render.end()
 
