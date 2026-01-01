@@ -2,6 +2,13 @@ package main
 
 import rl "vendor:raylib"
 
+Direction :: enum {
+	NORTH,
+	SOUTH,
+	EAST,
+	WEST,
+}
+
 input_get_direction :: proc() -> Vec2 {
 	return {
 		int(rl.IsKeyDown(.D)) - int(rl.IsKeyDown(.A)),

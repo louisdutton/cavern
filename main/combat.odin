@@ -14,6 +14,12 @@ CombatEntity :: struct {
 	flash_timer:        int,
 }
 
+DamageIndicator :: struct {
+	x, y:     int,
+	life:     int,
+	max_life: int,
+}
+
 CombatGrid :: struct {
 	size:              int,
 	entities:          [dynamic]CombatEntity,

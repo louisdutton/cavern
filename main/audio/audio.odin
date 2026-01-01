@@ -30,9 +30,11 @@ sound_paths := [SoundKind]cstring {
 @(private)
 sounds: [SoundKind]rl.Sound
 
+DEFAULT_VOLUME :: 0.2
+
 init :: proc() {
 	rl.InitAudioDevice()
-	rl.SetMasterVolume(0.2)
+	rl.SetMasterVolume(DEFAULT_VOLUME)
 	for kind in SoundKind {
 		sounds[kind] = rl.LoadSound(sound_paths[kind])
 	}

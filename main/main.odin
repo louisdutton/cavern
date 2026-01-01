@@ -7,18 +7,13 @@ import rl "vendor:raylib"
 
 GAME_SIZE :: 64
 WINDOW_SIZE :: 256
+WINDOW_TITLE :: "cavern"
 
 MOVE_DELAY :: 2
 ENEMY_DELAY :: 7
 
 Player :: struct {
 	x, y: int,
-}
-
-Item :: struct {
-	x, y:               int,
-	target_x, target_y: int,
-	kind:               Tile,
 }
 
 Enemy :: struct {
@@ -28,43 +23,9 @@ Enemy :: struct {
 	axis:             u8,
 }
 
-Tile :: enum {
-	GRASS,
-	STONE,
-	BOULDER,
-	EXIT,
-	KEY,
-	SWORD,
-	SHIELD,
-	LOCKED_DOOR,
-	SECRET_WALL,
-	ENEMY,
-}
-
-Direction :: enum {
-	NORTH,
-	SOUTH,
-	EAST,
-	WEST,
-}
-
 GameMode :: enum {
 	EXPLORATION,
 	COMBAT,
-}
-
-DamageIndicator :: struct {
-	x, y:     int,
-	life:     int,
-	max_life: int,
-}
-
-Room :: struct {
-	id:           int,
-	x, y:         int,
-	connections:  [Direction]bool,
-	locked_exits: [Direction]bool,
-	tiles:        [ROOM_SIZE][ROOM_SIZE]Tile,
 }
 
 Game :: struct {
@@ -105,7 +66,7 @@ explore_init :: proc() {
 
 main :: proc() {
 	rl.SetConfigFlags({.WINDOW_UNDECORATED})
-	rl.InitWindow(WINDOW_SIZE, WINDOW_SIZE, "cavern")
+	rl.InitWindow(WINDOW_SIZE, WINDOW_SIZE, WINDOW_TITLE)
 	rl.SetTargetFPS(24)
 
 	render.init(WINDOW_SIZE, GAME_SIZE)

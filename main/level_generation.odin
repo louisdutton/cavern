@@ -10,6 +10,27 @@ TILE_COUNT :: ROOM_SIZE * ROOM_SIZE // number of tiles in a room
 
 Vec2 :: [2]int
 
+Tile :: enum {
+	GRASS,
+	STONE,
+	BOULDER,
+	EXIT,
+	KEY,
+	SWORD,
+	SHIELD,
+	LOCKED_DOOR,
+	SECRET_WALL,
+	ENEMY,
+}
+
+Room :: struct {
+	id:           int,
+	x, y:         int,
+	connections:  [Direction]bool,
+	locked_exits: [Direction]bool,
+	tiles:        [ROOM_SIZE][ROOM_SIZE]Tile,
+}
+
 generate_floor :: proc() {
 	for y in 0 ..< FLOOR_SIZE {
 		for x in 0 ..< FLOOR_SIZE {

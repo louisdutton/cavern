@@ -16,11 +16,8 @@ draw_combat_grid :: proc() {
 					pixel_x := i32(tile_x + px)
 					pixel_y := i32(tile_y + py)
 
-					if (x + y) % 2 == 0 {
-						rl.DrawPixel(pixel_x, pixel_y, render.CATPPUCCIN_SURFACE0)
-					} else {
-						rl.DrawPixel(pixel_x, pixel_y, render.CATPPUCCIN_BASE)
-					}
+					col := (x + y) % 2 == 0 ? render.CATPPUCCIN_SURFACE0 : render.CATPPUCCIN_BASE
+					rl.DrawPixel(pixel_x, pixel_y, col)
 				}
 			}
 		}
