@@ -5,16 +5,16 @@ import "core:math/rand"
 import rl "vendor:raylib"
 
 combat_init :: proc(enemy_x, enemy_y: int) {
-	game.state = .COMBAT
-	game.combat_grid.size = 8
-	game.combat_grid.turn = 0
-	clear(&game.combat_grid.entities)
-	clear(&game.combat_grid.attack_indicators)
-	clear(&game.combat_grid.damage_indicators)
-	game.combat_grid.screen_shake = 0
+	game.mode = .COMBAT
+	game.combat.size = 8
+	game.combat.turn = 0
+	clear(&game.combat.entities)
+	clear(&game.combat.attack_indicators)
+	clear(&game.combat.damage_indicators)
+	game.combat.screen_shake = 0
 
 	append(
-		&game.combat_grid.entities,
+		&game.combat.entities,
 		CombatEntity{x = 2, y = 6, is_player = true, health = 3, max_health = 3},
 	)
 
@@ -25,7 +25,7 @@ combat_init :: proc(enemy_x, enemy_y: int) {
 		if i < len(enemy_positions) {
 			pos := enemy_positions[i]
 			append(
-				&game.combat_grid.entities,
+				&game.combat.entities,
 				CombatEntity{x = pos.x, y = pos.y, is_player = false, health = 2, max_health = 2},
 			)
 		}
@@ -33,20 +33,20 @@ combat_init :: proc(enemy_x, enemy_y: int) {
 }
 
 combat_fini :: proc() {
-	game.state = .EXPLORATION
+	game.mode = .EXPLORATION
 
 	defeated_enemy_x, defeated_enemy_y := game.player.x, game.player.y
 
 	game.world[defeated_enemy_y][defeated_enemy_x] = .GRASS
-	game.combat_grid.screen_shake = 0
+	game.combat.screen_shake = 0
 
-	clear(&game.combat_grid.entities)
-	clear(&game.combat_grid.attack_indicators)
-	clear(&game.combat_grid.damage_indicators)
+	clear(&game.combat.entities)
+	clear(&game.combat.attack_indicators)
+	clear(&game.combat.damage_indicators)
 }
 
 combat_get_entity_at :: proc(x, y: int) -> ^CombatEntity {
-	for &entity in game.combat_grid.entities {
+	for &entity in game.combat.entities {
 		if entity.x == x && entity.y == y {
 			return &entity
 		}
@@ -55,12 +55,12 @@ combat_get_entity_at :: proc(x, y: int) -> ^CombatEntity {
 }
 
 combat_is_position_valid :: proc(x, y: int) -> bool {
-	return x >= 0 && x < game.combat_grid.size && y >= 0 && y < game.combat_grid.size
+	return x >= 0 && x < game.combat.size && y >= 0 && y < game.combat.size
 }
 
 update_enemy_ai :: proc(enemy: ^CombatEntity) {
 	player_entity: ^CombatEntity
-	for &entity in game.combat_grid.entities {
+	for &entity in game.combat.entities {
 		if entity.is_player {
 			player_entity = &entity
 			break
@@ -83,10 +83,10 @@ update_enemy_ai :: proc(enemy: ^CombatEntity) {
 		}
 		enemy.is_telegraphing = false
 
-		for i := len(game.combat_grid.attack_indicators) - 1; i >= 0; i -= 1 {
-			indicator := game.combat_grid.attack_indicators[i]
+		for i := len(game.combat.attack_indicators) - 1; i >= 0; i -= 1 {
+			indicator := game.combat.attack_indicators[i]
 			if indicator.x == enemy.target_x && indicator.y == enemy.target_y {
-				ordered_remove(&game.combat_grid.attack_indicators, i)
+				ordered_remove(&game.combat.attack_indicators, i)
 				break
 			}
 		}
@@ -99,10 +99,7 @@ update_enemy_ai :: proc(enemy: ^CombatEntity) {
 				enemy.is_telegraphing = true
 				enemy.target_x = player_entity.x
 				enemy.target_y = player_entity.y
-				append(
-					&game.combat_grid.attack_indicators,
-					[2]int{player_entity.x, player_entity.y},
-				)
+				append(&game.combat.attack_indicators, [2]int{player_entity.x, player_entity.y})
 				return
 			}
 		}
@@ -137,11 +134,11 @@ update_enemy_ai :: proc(enemy: ^CombatEntity) {
 combat_update :: proc() {
 	// return to exploration mode upon defeating all enemies
 	// (only the player entity remains)
-	if len(game.combat_grid.entities) == 1 {
+	if len(game.combat.entities) == 1 {
 		combat_fini()
 	}
 
-	for &entity in game.combat_grid.entities {
+	for &entity in game.combat.entities {
 		if entity.flash_timer > 0 {
 			entity.flash_timer -= 1
 			if entity.flash_timer < 0 {
@@ -154,7 +151,7 @@ combat_update :: proc() {
 	if game.move_timer > 0 do return
 
 	player_entity := combat_get_entity_at(-1, -1)
-	for &entity in game.combat_grid.entities {
+	for &entity in game.combat.entities {
 		if entity.is_player {
 			player_entity = &entity
 			break
@@ -163,7 +160,7 @@ combat_update :: proc() {
 	if player_entity == nil do return
 
 	dir := input_get_direction()
-	if vec2_is_zero(dir) do return
+	if is_zero_vec2(dir) do return
 
 	target_pos := dir + Vec2{player_entity.x, player_entity.y}
 	if !combat_is_position_valid(target_pos.x, target_pos.y) do return
@@ -180,9 +177,9 @@ combat_update :: proc() {
 		audio.play(.HURT)
 
 		if target.health <= 0 {
-			for i := len(game.combat_grid.entities) - 1; i >= 0; i -= 1 {
-				if &game.combat_grid.entities[i] == target {
-					ordered_remove(&game.combat_grid.entities, i)
+			for i := len(game.combat.entities) - 1; i >= 0; i -= 1 {
+				if &game.combat.entities[i] == target {
+					ordered_remove(&game.combat.entities, i)
 					break
 				}
 			}
@@ -200,15 +197,15 @@ combat_update :: proc() {
 		audio.play(.CLICK)
 	}
 
-	for &enemy in game.combat_grid.entities {
+	for &enemy in game.combat.entities {
 		if !enemy.is_player {
 			update_enemy_ai(&enemy)
 		}
 	}
 
 	// restart game immediately on player death
-	for i := len(game.combat_grid.entities) - 1; i >= 0; i -= 1 {
-		entity := &game.combat_grid.entities[i]
+	for i := len(game.combat.entities) - 1; i >= 0; i -= 1 {
+		entity := &game.combat.entities[i]
 		if entity.is_player && entity.health <= 0 {
 			init_game()
 			return
@@ -217,20 +214,20 @@ combat_update :: proc() {
 }
 
 update_dust :: proc() {
-	for i := len(game.combat_grid.damage_indicators) - 1; i >= 0; i -= 1 {
-		game.combat_grid.damage_indicators[i].life -= 1
-		if game.combat_grid.damage_indicators[i].life <= 0 {
-			ordered_remove(&game.combat_grid.damage_indicators, i)
+	for i := len(game.combat.damage_indicators) - 1; i >= 0; i -= 1 {
+		game.combat.damage_indicators[i].life -= 1
+		if game.combat.damage_indicators[i].life <= 0 {
+			ordered_remove(&game.combat.damage_indicators, i)
 		}
 	}
 }
 
 add_screen_shake :: proc(intensity: int) {
-	game.combat_grid.screen_shake = max(game.combat_grid.screen_shake, intensity)
+	game.combat.screen_shake = max(game.combat.screen_shake, intensity)
 }
 
 update_screen_shake :: proc() {
-	game.combat_grid.screen_shake = max(0, game.combat_grid.screen_shake - 8)
+	game.combat.screen_shake = max(0, game.combat.screen_shake - 8)
 }
 
 input_get_direction :: proc() -> Vec2 {
@@ -241,13 +238,10 @@ input_get_direction :: proc() -> Vec2 {
 }
 
 // TODO: make this generic for any int array
-vec2_is_zero :: proc(v: Vec2) -> bool {
+is_zero_vec2 :: proc(v: Vec2) -> bool {
 	return v.x == 0 && v.y == 0
 }
 
 spawn_damage_indicator :: proc(x, y: int) {
-	append(
-		&game.combat_grid.damage_indicators,
-		DamageIndicator{x = x, y = y, life = 7, max_life = 7},
-	)
+	append(&game.combat.damage_indicators, DamageIndicator{x = x, y = y, life = 7, max_life = 7})
 }

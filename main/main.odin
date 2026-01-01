@@ -49,7 +49,7 @@ Direction :: enum {
 	WEST,
 }
 
-GameState :: enum {
+GameMode :: enum {
 	EXPLORATION,
 	COMBAT,
 }
@@ -97,8 +97,8 @@ Game :: struct {
 	floor_layout:   [FLOOR_SIZE][FLOOR_SIZE]Room,
 	floor_number:   int,
 	room_coords:    Vec2,
-	state:          GameState,
-	combat_grid:    CombatGrid,
+	mode:           GameMode,
+	combat:         CombatGrid,
 	inventory:      [dynamic]Item,
 	unlocked_doors: map[[3]int]bool,
 }
@@ -115,10 +115,10 @@ init_game :: proc() {
 		game.inventory = make([dynamic]Item)
 	}
 	game.unlocked_doors = make(map[[3]int]bool)
-	game.state = .EXPLORATION
-	game.combat_grid.entities = make([dynamic]CombatEntity)
-	game.combat_grid.attack_indicators = make([dynamic][2]int)
-	game.combat_grid.damage_indicators = make([dynamic]DamageIndicator)
+	game.mode = .EXPLORATION
+	game.combat.entities = make([dynamic]CombatEntity)
+	game.combat.attack_indicators = make([dynamic][2]int)
+	game.combat.damage_indicators = make([dynamic]DamageIndicator)
 
 	generate_floor()
 	load_current_room()
@@ -137,7 +137,7 @@ main :: proc() {
 	for !rl.WindowShouldClose() {
 		audio.music_update()
 
-		switch game.state {
+		switch game.mode {
 		case .EXPLORATION:
 			update_player()
 			update_enemies()
@@ -176,9 +176,9 @@ main :: proc() {
 
 		shake_x := f32(0)
 		shake_y := f32(0)
-		if game.combat_grid.screen_shake > 0 {
-			shake_x = (f32(rand.int31() % 5) - 2) * f32(game.combat_grid.screen_shake)
-			shake_y = (f32(rand.int31() % 5) - 2) * f32(game.combat_grid.screen_shake)
+		if game.combat.screen_shake > 0 {
+			shake_x = (f32(rand.int31() % 5) - 2) * f32(game.combat.screen_shake)
+			shake_y = (f32(rand.int31() % 5) - 2) * f32(game.combat.screen_shake)
 		}
 
 		dest_rect := rl.Rectangle{shake_x, shake_y, WINDOW_SIZE, WINDOW_SIZE}

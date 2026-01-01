@@ -4,10 +4,10 @@ import "render"
 import rl "vendor:raylib"
 
 draw_combat_grid :: proc() {
-	grid_size := GAME_SIZE / game.combat_grid.size
+	grid_size := GAME_SIZE / game.combat.size
 
-	for y in 0 ..< game.combat_grid.size {
-		for x in 0 ..< game.combat_grid.size {
+	for y in 0 ..< game.combat.size {
+		for x in 0 ..< game.combat.size {
 			tile_x := x * grid_size
 			tile_y := y * grid_size
 
@@ -28,9 +28,9 @@ draw_combat_grid :: proc() {
 }
 
 draw_combat_entities :: proc() {
-	grid_size := GAME_SIZE / game.combat_grid.size
+	grid_size := GAME_SIZE / game.combat.size
 
-	for indicator in game.combat_grid.attack_indicators {
+	for indicator in game.combat.attack_indicators {
 		pixel_x := indicator.x * grid_size
 		pixel_y := indicator.y * grid_size
 
@@ -41,7 +41,7 @@ draw_combat_entities :: proc() {
 		}
 	}
 
-	for damage in game.combat_grid.damage_indicators {
+	for damage in game.combat.damage_indicators {
 		pixel_x := damage.x * grid_size
 		pixel_y := damage.y * grid_size
 		alpha := f32(damage.life) / f32(damage.max_life)
@@ -56,7 +56,7 @@ draw_combat_entities :: proc() {
 		}
 	}
 
-	for entity in game.combat_grid.entities {
+	for entity in game.combat.entities {
 		pixel_x := entity.x * grid_size
 		pixel_y := entity.y * grid_size
 
