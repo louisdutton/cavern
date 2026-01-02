@@ -84,3 +84,17 @@ is_valid_enemy_move :: proc(pos: Vec2) -> bool {
 
 	return true
 }
+
+cleanup_enemy_attack_indicators :: proc(dead_enemy: ^CombatEntity) {
+	if !dead_enemy.is_telegraphing {
+		return
+	}
+
+	for i := len(game.combat.attack_indicators) - 1; i >= 0; i -= 1 {
+		indicator := game.combat.attack_indicators[i]
+		if indicator == dead_enemy.target {
+			ordered_remove(&game.combat.attack_indicators, i)
+			break
+		}
+	}
+}

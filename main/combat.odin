@@ -127,6 +127,7 @@ combat_update :: proc() {
 		audio.play_sound(.HURT)
 
 		if target.health <= 0 {
+			cleanup_enemy_attack_indicators(target)
 			for i := len(game.combat.entities) - 1; i >= 0; i -= 1 {
 				if &game.combat.entities[i] == target {
 					ordered_remove(&game.combat.entities, i)
