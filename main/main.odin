@@ -78,6 +78,7 @@ main :: proc() {
 		case .EXPLORATION:
 			player_update()
 			update_enemies()
+			update_screen_shake()
 
 			if check_player_enemy_collision() {
 				continue
