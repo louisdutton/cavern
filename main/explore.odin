@@ -43,8 +43,8 @@ unlock_door_connection :: proc(direction: Direction) {
 
 	switch direction {
 	case .UP:
-		world_set({0, ROOM_CENTRE - 1}, .GRASS)
-		world_set({0, ROOM_CENTRE}, .GRASS)
+		world_set({ROOM_CENTRE - 1, 0}, .GRASS)
+		world_set({ROOM_CENTRE, 0}, .GRASS)
 
 		if game.room_coords.y > 0 {
 			neighbor_door_key := [3]int {
@@ -58,8 +58,8 @@ unlock_door_connection :: proc(direction: Direction) {
 			neighbor_room.tiles[ROOM_SIZE - 1][ROOM_CENTRE] = .GRASS
 		}
 	case .DOWN:
-		world_set({ROOM_SIZE - 1, ROOM_CENTRE - 1}, .GRASS)
-		world_set({ROOM_SIZE - 1, ROOM_CENTRE}, .GRASS)
+		world_set({ROOM_CENTRE - 1, ROOM_SIZE - 1}, .GRASS)
+		world_set({ROOM_CENTRE, ROOM_SIZE - 1}, .GRASS)
 
 		if game.room_coords.y < FLOOR_SIZE - 1 {
 			neighbor_door_key := [3]int {
@@ -73,8 +73,8 @@ unlock_door_connection :: proc(direction: Direction) {
 			neighbor_room.tiles[0][ROOM_CENTRE] = .GRASS
 		}
 	case .LEFT:
-		world_set({ROOM_CENTRE - 1, 0}, .GRASS)
-		world_set({ROOM_CENTRE, 0}, .GRASS)
+		world_set({0, ROOM_CENTRE - 1}, .GRASS)
+		world_set({0, ROOM_CENTRE}, .GRASS)
 
 		if game.room_coords.x > 0 {
 			neighbor_door_key := [3]int {
@@ -88,8 +88,8 @@ unlock_door_connection :: proc(direction: Direction) {
 			neighbor_room.tiles[ROOM_CENTRE][ROOM_SIZE - 1] = .GRASS
 		}
 	case .RIGHT:
-		world_set({ROOM_CENTRE - 1, ROOM_SIZE}, .GRASS)
-		world_set({ROOM_CENTRE, ROOM_SIZE}, .GRASS)
+		world_set({ROOM_SIZE - 1, ROOM_CENTRE - 1}, .GRASS)
+		world_set({ROOM_SIZE - 1, ROOM_CENTRE}, .GRASS)
 
 		if game.room_coords.x < FLOOR_SIZE - 1 {
 			neighbor_door_key := [3]int {

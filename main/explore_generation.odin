@@ -1,5 +1,6 @@
 package main
 
+import "core:fmt"
 import "core:math/rand"
 
 FLOOR_SIZE :: 5 // equalateral length of a floor
@@ -55,6 +56,7 @@ generate_floor :: proc() {
 	}
 
 	create_path_start_to_end(start, end)
+	place_lock_and_key_on_path(start, end)
 
 	for y in 0 ..< FLOOR_SIZE {
 		for x in 0 ..< FLOOR_SIZE {
@@ -62,14 +64,24 @@ generate_floor :: proc() {
 				room := &game.floor_layout[y][x]
 				generate_room_tiles(room, start, end)
 				generate_room_enemies(room, start, end)
+			}
+		}
+	}
+
+	place_key_in_room(start, end)
+	place_sword_and_shield(start, end)
+
+	for y in 0 ..< FLOOR_SIZE {
+		for x in 0 ..< FLOOR_SIZE {
+			if room_exists({x, y}) {
+				room := &game.floor_layout[y][x]
 				place_room_locked_doors(room)
 			}
 		}
 	}
 
-	place_lock_and_key_on_path(start, end)
-	place_sword_and_shield(start, end)
 	game.room_coords = start
+	print_floor_debug(start, end)
 }
 
 room_exists :: proc(pos: Vec2) -> bool {
@@ -112,44 +124,131 @@ create_path_start_to_end :: proc(start, end: Vec2) {
 }
 
 place_lock_and_key_on_path :: proc(start, end: Vec2) {
-	key := start + (end - start) / 2
+	path: [dynamic]Vec2
+	defer delete(path)
 
-	if key == start {
-		if end.x != start.x {
-			key = start.x + 1
+	current := start
+	append(&path, current)
+
+	for current.x != end.x {
+		if current.x < end.x {
+			current.x += 1
 		} else {
-			key.y = start.y + 1
+			current.x -= 1
+		}
+		append(&path, current)
+	}
+
+	for current.y != end.y {
+		if current.y < end.y {
+			current.y += 1
+		} else {
+			current.y -= 1
+		}
+		append(&path, current)
+	}
+
+	if len(path) < 3 do return
+
+	lock_index := 1 + rand.int_max(len(path) - 2)
+	lock_pos := path[lock_index]
+	next_pos := path[lock_index + 1]
+
+	if !room_exists(lock_pos) || !room_exists(next_pos) do return
+
+	lock_room := &game.floor_layout[lock_pos.y][lock_pos.x]
+	next_room := &game.floor_layout[next_pos.y][next_pos.x]
+
+	if next_pos.x > lock_pos.x {
+		lock_room.locked_exits[.RIGHT] = true
+		next_room.locked_exits[.LEFT] = true
+	} else if next_pos.x < lock_pos.x {
+		lock_room.locked_exits[.LEFT] = true
+		next_room.locked_exits[.RIGHT] = true
+	} else if next_pos.y > lock_pos.y {
+		lock_room.locked_exits[.DOWN] = true
+		next_room.locked_exits[.UP] = true
+	} else if next_pos.y < lock_pos.y {
+		lock_room.locked_exits[.UP] = true
+		next_room.locked_exits[.DOWN] = true
+	}
+
+	branch_pos := lock_pos
+	key_pos: Vec2
+	directions := []Vec2{{0, -1}, {0, 1}, {-1, 0}, {1, 0}}
+
+	for dir in directions {
+		candidate := branch_pos + dir
+		if candidate != next_pos &&
+		   is_in_bounds(candidate, FLOOR_SIZE) &&
+		   !room_exists(candidate) {
+			key_pos = candidate
+			break
 		}
 	}
 
-	if key == end {
-		if end.x != start.x {
-			key = end.x - 1
-		} else {
-			key.y = end.y - 1
+	if key_pos.x == 0 && key_pos.y == 0 {
+		for i in 0..< len(path) - 1 {
+			branch_pos = path[i]
+			for dir in directions {
+				candidate := branch_pos + dir
+				if candidate != path[i + 1] &&
+				   is_in_bounds(candidate, FLOOR_SIZE) &&
+				   !room_exists(candidate) {
+					key_pos = candidate
+					break
+				}
+			}
+			if key_pos.x != 0 || key_pos.y != 0 do break
 		}
 	}
 
-	key_room := &game.floor_layout[key.y][key.x]
-	key_room.tiles[ROOM_CENTRE][ROOM_CENTRE - 1] = .KEY
+	if key_pos.x == 0 && key_pos.y == 0 do return
 
-	lock := key
-	if key.x < end.x {
-		lock.x += 1
-		game.floor_layout[key.y][key.x].locked_exits[.RIGHT] = true
-		game.floor_layout[key.y][lock.x].locked_exits[.LEFT] = true
-	} else if key.x > end.x {
-		lock.x -= 1
-		game.floor_layout[key.y][key.x].locked_exits[.LEFT] = true
-		game.floor_layout[key.y][lock.x].locked_exits[.RIGHT] = true
-	} else if key.y < end.y {
-		lock.y += 1
-		game.floor_layout[key.y][key.x].locked_exits[.DOWN] = true
-		game.floor_layout[lock.y][key.x].locked_exits[.UP] = true
-	} else if key.y > end.y {
-		lock.y -= 1
-		game.floor_layout[key.y][key.x].locked_exits[.UP] = true
-		game.floor_layout[lock.y][key.x].locked_exits[.DOWN] = true
+	key_room := &game.floor_layout[key_pos.y][key_pos.x]
+	branch_room := &game.floor_layout[branch_pos.y][branch_pos.x]
+
+	key_room.id = key_pos.y * FLOOR_SIZE + key_pos.x
+	key_room.x = key_pos.x
+	key_room.y = key_pos.y
+
+	diff := key_pos - branch_pos
+	if diff.x > 0 {
+		branch_room.connections[.RIGHT] = true
+		key_room.connections[.LEFT] = true
+	} else if diff.x < 0 {
+		branch_room.connections[.LEFT] = true
+		key_room.connections[.RIGHT] = true
+	} else if diff.y > 0 {
+		branch_room.connections[.DOWN] = true
+		key_room.connections[.UP] = true
+	} else if diff.y < 0 {
+		branch_room.connections[.UP] = true
+		key_room.connections[.DOWN] = true
+	}
+
+}
+
+place_key_in_room :: proc(start, end: Vec2) {
+	for y in 0 ..< FLOOR_SIZE {
+		for x in 0 ..< FLOOR_SIZE {
+			if room_exists({x, y}) {
+				room := &game.floor_layout[y][x]
+				pos := Vec2{x, y}
+				if pos != start && pos != end {
+					connections_count := 0
+					if room.connections[.UP] do connections_count += 1
+					if room.connections[.DOWN] do connections_count += 1
+					if room.connections[.LEFT] do connections_count += 1
+					if room.connections[.RIGHT] do connections_count += 1
+
+					if connections_count == 1 {
+						room.tiles[ROOM_CENTRE][ROOM_CENTRE] = .KEY
+						return
+					}
+				}
+			}
+		}
 	}
 }
 
@@ -228,7 +327,11 @@ generate_room_tiles :: proc(room: ^Room, start, end: Vec2) {
 
 	switch room {
 	case start: // no-op
-	case end: room.tiles[ROOM_CENTRE][ROOM_CENTRE] = .EXIT
+	case end:
+		room.tiles[ROOM_CENTRE][ROOM_CENTRE - 1] = .EXIT
+		room.tiles[ROOM_CENTRE][ROOM_CENTRE] = .EXIT
+		room.tiles[ROOM_CENTRE - 1][ROOM_CENTRE - 1] = .EXIT
+		room.tiles[ROOM_CENTRE - 1][ROOM_CENTRE] = .EXIT
 	case:
 		boulder_count := 2 + (room.id % 3)
 		for _ in 0 ..< boulder_count {
@@ -319,5 +422,82 @@ place_secret_walls :: proc() {
 				}
 			}
 		}
+	}
+}
+
+print_floor_debug :: proc(start, end: Vec2) {
+	for y in 0 ..< FLOOR_SIZE * 2 - 1 {
+		for x in 0 ..< FLOOR_SIZE * 2 - 1 {
+			room_x := x / 2
+			room_y := y / 2
+			is_room_x := x % 2 == 0
+			is_room_y := y % 2 == 0
+
+			if is_room_x && is_room_y {
+				pos := Vec2{room_x, room_y}
+				if room_exists(pos) {
+					room := &game.floor_layout[pos.y][pos.x]
+					has_key := false
+					for ty in 0 ..< ROOM_SIZE {
+						for tx in 0 ..< ROOM_SIZE {
+							if room.tiles[ty][tx] == .KEY {
+								has_key = true
+								break
+							}
+						}
+						if has_key do break
+					}
+
+					if pos == start {
+						fmt.print("S")
+					} else if pos == end {
+						fmt.print("E")
+					} else if has_key {
+						fmt.print("K")
+					} else {
+						fmt.print("+")
+					}
+				} else {
+					fmt.print(".")
+				}
+			} else if is_room_x && !is_room_y {
+				pos1 := Vec2{room_x, room_y}
+				pos2 := Vec2{room_x, room_y + 1}
+				if room_exists(pos1) &&
+				   room_exists(pos2) &&
+				   game.floor_layout[pos1.y][pos1.x].connections[.DOWN] &&
+				   game.floor_layout[pos2.y][pos2.x].connections[.UP] {
+					room1 := &game.floor_layout[pos1.y][pos1.x]
+					room2 := &game.floor_layout[pos2.y][pos2.x]
+					if room1.locked_exits[.DOWN] || room2.locked_exits[.UP] {
+						fmt.print("L")
+					} else {
+						fmt.print("|")
+					}
+				} else {
+					fmt.print(" ")
+				}
+			} else if !is_room_x && is_room_y {
+				pos1 := Vec2{room_x, room_y}
+				pos2 := Vec2{room_x + 1, room_y}
+				if room_exists(pos1) &&
+				   room_exists(pos2) &&
+				   game.floor_layout[pos1.y][pos1.x].connections[.RIGHT] &&
+				   game.floor_layout[pos2.y][pos2.x].connections[.LEFT] {
+					room1 := &game.floor_layout[pos1.y][pos1.x]
+					room2 := &game.floor_layout[pos2.y][pos2.x]
+					if room1.locked_exits[.RIGHT] || room2.locked_exits[.LEFT] {
+						fmt.print("L")
+					} else {
+						fmt.print("-")
+					}
+				} else {
+					fmt.print(" ")
+				}
+			} else {
+				fmt.print(" ")
+			}
+		}
+		fmt.println()
 	}
 }
