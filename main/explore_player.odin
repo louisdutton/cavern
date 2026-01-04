@@ -80,22 +80,22 @@ player_move :: proc(pos: Vec2) {
 // a transition has taken place
 player_handle_room_boundary :: proc(pos: Vec2) -> bool {
 	room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
-	if pos.x >= ROOM_SIZE && room.connections[.EAST] {
+	if pos.x >= ROOM_SIZE && room.connections[.RIGHT] {
 		game.room_coords.x += 1
 		game.player.x = 0
 		load_current_room()
 		return true
-	} else if pos.x < 0 && room.connections[.WEST] {
+	} else if pos.x < 0 && room.connections[.LEFT] {
 		game.room_coords.x -= 1
 		game.player.x = ROOM_SIZE - 1
 		load_current_room()
 		return true
-	} else if pos.y < 0 && room.connections[.NORTH] {
+	} else if pos.y < 0 && room.connections[.UP] {
 		game.room_coords.y -= 1
 		game.player.y = ROOM_SIZE - 1
 		load_current_room()
 		return true
-	} else if pos.y >= ROOM_SIZE && room.connections[.SOUTH] {
+	} else if pos.y >= ROOM_SIZE && room.connections[.DOWN] {
 		game.room_coords.y += 1
 		game.player.y = 0
 		load_current_room()

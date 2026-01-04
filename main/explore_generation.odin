@@ -76,10 +76,10 @@ room_exists :: proc(pos: Vec2) -> bool {
 	if !is_in_bounds(pos, FLOOR_SIZE) do return false
 	room := &game.floor_layout[pos.y][pos.x]
 	return(
-		room.connections[.NORTH] ||
-		room.connections[.SOUTH] ||
-		room.connections[.EAST] ||
-		room.connections[.WEST] \
+		room.connections[.UP] ||
+		room.connections[.DOWN] ||
+		room.connections[.RIGHT] ||
+		room.connections[.LEFT] \
 	)
 }
 
@@ -88,24 +88,24 @@ create_path_start_to_end :: proc(start, end: Vec2) {
 
 	for current.x != end.x {
 		if current.x < end.x {
-			game.floor_layout[current.y][current.x].connections[.EAST] = true
-			game.floor_layout[current.y][current.x + 1].connections[.WEST] = true
+			game.floor_layout[current.y][current.x].connections[.RIGHT] = true
+			game.floor_layout[current.y][current.x + 1].connections[.LEFT] = true
 			current.x += 1
 		} else {
-			game.floor_layout[current.y][current.x].connections[.WEST] = true
-			game.floor_layout[current.y][current.x - 1].connections[.EAST] = true
+			game.floor_layout[current.y][current.x].connections[.LEFT] = true
+			game.floor_layout[current.y][current.x - 1].connections[.RIGHT] = true
 			current.x -= 1
 		}
 	}
 
 	for current.y != end.y {
 		if current.y < end.y {
-			game.floor_layout[current.y][current.x].connections[.SOUTH] = true
-			game.floor_layout[current.y + 1][current.x].connections[.NORTH] = true
+			game.floor_layout[current.y][current.x].connections[.DOWN] = true
+			game.floor_layout[current.y + 1][current.x].connections[.UP] = true
 			current.y += 1
 		} else {
-			game.floor_layout[current.y][current.x].connections[.NORTH] = true
-			game.floor_layout[current.y - 1][current.x].connections[.SOUTH] = true
+			game.floor_layout[current.y][current.x].connections[.UP] = true
+			game.floor_layout[current.y - 1][current.x].connections[.DOWN] = true
 			current.y -= 1
 		}
 	}
@@ -136,20 +136,20 @@ place_lock_and_key_on_path :: proc(start, end: Vec2) {
 	lock := key
 	if key.x < end.x {
 		lock.x += 1
-		game.floor_layout[key.y][key.x].locked_exits[.EAST] = true
-		game.floor_layout[key.y][lock.x].locked_exits[.WEST] = true
+		game.floor_layout[key.y][key.x].locked_exits[.RIGHT] = true
+		game.floor_layout[key.y][lock.x].locked_exits[.LEFT] = true
 	} else if key.x > end.x {
 		lock.x -= 1
-		game.floor_layout[key.y][key.x].locked_exits[.WEST] = true
-		game.floor_layout[key.y][lock.x].locked_exits[.EAST] = true
+		game.floor_layout[key.y][key.x].locked_exits[.LEFT] = true
+		game.floor_layout[key.y][lock.x].locked_exits[.RIGHT] = true
 	} else if key.y < end.y {
 		lock.y += 1
-		game.floor_layout[key.y][key.x].locked_exits[.SOUTH] = true
-		game.floor_layout[lock.y][key.x].locked_exits[.NORTH] = true
+		game.floor_layout[key.y][key.x].locked_exits[.DOWN] = true
+		game.floor_layout[lock.y][key.x].locked_exits[.UP] = true
 	} else if key.y > end.y {
 		lock.y -= 1
-		game.floor_layout[key.y][key.x].locked_exits[.NORTH] = true
-		game.floor_layout[lock.y][key.x].locked_exits[.SOUTH] = true
+		game.floor_layout[key.y][key.x].locked_exits[.UP] = true
+		game.floor_layout[lock.y][key.x].locked_exits[.DOWN] = true
 	}
 }
 
@@ -209,19 +209,19 @@ generate_room_tiles :: proc(room: ^Room, start, end: Vec2) {
 		room.tiles[i][ROOM_SIZE - 1] = .STONE
 	}
 
-	if room.connections[.NORTH] {
+	if room.connections[.UP] {
 		room.tiles[0][ROOM_CENTRE - 1] = .GRASS
 		room.tiles[0][ROOM_CENTRE] = .GRASS
 	}
-	if room.connections[.SOUTH] {
+	if room.connections[.DOWN] {
 		room.tiles[ROOM_SIZE - 1][ROOM_CENTRE - 1] = .GRASS
 		room.tiles[ROOM_SIZE - 1][ROOM_CENTRE] = .GRASS
 	}
-	if room.connections[.WEST] {
+	if room.connections[.LEFT] {
 		room.tiles[ROOM_CENTRE - 1][0] = .GRASS
 		room.tiles[ROOM_CENTRE][0] = .GRASS
 	}
-	if room.connections[.EAST] {
+	if room.connections[.RIGHT] {
 		room.tiles[ROOM_CENTRE - 1][ROOM_SIZE - 1] = .GRASS
 		room.tiles[ROOM_CENTRE][ROOM_SIZE - 1] = .GRASS
 	}
@@ -260,29 +260,29 @@ generate_room_enemies :: proc(room: ^Room, start, end: Vec2) {
 place_room_locked_doors :: proc(room: ^Room) {
 	door_key := [3]int{room.x, room.y, 0}
 
-	if room.locked_exits[.NORTH] {
-		door_key.z = int(Direction.NORTH)
+	if room.locked_exits[.UP] {
+		door_key.z = int(Direction.UP)
 		if !game.unlocked_doors[door_key] {
 			room.tiles[0][ROOM_CENTRE - 1] = .LOCKED_DOOR
 			room.tiles[0][ROOM_CENTRE] = .LOCKED_DOOR
 		}
 	}
-	if room.locked_exits[.SOUTH] {
-		door_key.z = int(Direction.SOUTH)
+	if room.locked_exits[.DOWN] {
+		door_key.z = int(Direction.DOWN)
 		if !game.unlocked_doors[door_key] {
 			room.tiles[ROOM_SIZE - 1][ROOM_CENTRE - 1] = .LOCKED_DOOR
 			room.tiles[ROOM_SIZE - 1][ROOM_CENTRE] = .LOCKED_DOOR
 		}
 	}
-	if room.locked_exits[.WEST] {
-		door_key.z = int(Direction.WEST)
+	if room.locked_exits[.LEFT] {
+		door_key.z = int(Direction.LEFT)
 		if !game.unlocked_doors[door_key] {
 			room.tiles[ROOM_CENTRE - 1][0] = .LOCKED_DOOR
 			room.tiles[ROOM_CENTRE][0] = .LOCKED_DOOR
 		}
 	}
-	if room.locked_exits[.EAST] {
-		door_key.z = int(Direction.EAST)
+	if room.locked_exits[.RIGHT] {
+		door_key.z = int(Direction.RIGHT)
 		if !game.unlocked_doors[door_key] {
 			room.tiles[ROOM_CENTRE - 1][ROOM_SIZE - 1] = .LOCKED_DOOR
 			room.tiles[ROOM_CENTRE][ROOM_SIZE - 1] = .LOCKED_DOOR
@@ -301,19 +301,19 @@ place_secret_walls :: proc() {
 			room := &game.floor_layout[ry][rx]
 
 			if rand.float32() <= SECRET_WALL_SPAWN_CHANCE {
-				if !room.connections[.NORTH] && ry > 0 {
+				if !room.connections[.UP] && ry > 0 {
 					tx := 1 + rand.int_max(TILE_END)
 					room.tiles[0][tx] = .SECRET_WALL
 				}
-				if !room.connections[.SOUTH] && ry < FLOOR_END {
+				if !room.connections[.DOWN] && ry < FLOOR_END {
 					tx := 1 + rand.int_max(TILE_END)
 					room.tiles[ROOM_END][tx] = .SECRET_WALL
 				}
-				if !room.connections[.WEST] && rx > 0 {
+				if !room.connections[.LEFT] && rx > 0 {
 					ty := 1 + rand.int_max(TILE_END)
 					room.tiles[ty][0] = .SECRET_WALL
 				}
-				if !room.connections[.EAST] && rx < FLOOR_END {
+				if !room.connections[.RIGHT] && rx < FLOOR_END {
 					ty := 1 + rand.int_max(TILE_END)
 					room.tiles[ty][ROOM_END] = .SECRET_WALL
 				}
