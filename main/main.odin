@@ -1,6 +1,7 @@
 package main
 
 import "audio"
+import smarr "core:container/small_array"
 import "core:math/rand"
 import "render"
 import rl "vendor:raylib"
@@ -39,7 +40,6 @@ Game :: struct {
 	room_coords:    Vec2,
 	mode:           GameMode,
 	combat:         CombatGrid,
-	inventory:      [dynamic]Item,
 	unlocked_doors: map[[3]int]bool,
 }
 
@@ -51,9 +51,7 @@ explore_init :: proc() {
 	game.current_room = 0
 	game.move_timer = 0
 	game.enemy_timer = 0
-	if game.inventory == nil {
-		game.inventory = make([dynamic]Item)
-	}
+
 	game.unlocked_doors = make(map[[3]int]bool)
 	game.mode = .EXPLORATION
 	game.combat.entities = make([dynamic]CombatEntity)
@@ -115,4 +113,5 @@ main :: proc() {
 
 load_current_room :: proc() {
 	game.world = &game.floor_layout[game.room_coords.y][game.room_coords.x].tiles
+	inventory_collapse(game.player.position)
 }

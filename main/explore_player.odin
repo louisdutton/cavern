@@ -20,7 +20,7 @@ player_update :: proc() {
 	case .KEY, .SWORD, .SHIELD:
 		world_set(next, .GRASS)
 		audio.play_sound(.PICKUP)
-		append(&game.inventory, Item{kind = kind, position = next, target = game.player.position})
+		inventory_push(kind)
 		player_move(next)
 
 	// destory secret walls
