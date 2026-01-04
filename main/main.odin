@@ -7,7 +7,7 @@ import "render"
 import rl "vendor:raylib"
 
 GAME_SIZE :: 64
-WINDOW_SIZE :: 256
+WINDOW_SIZE :: 384
 WINDOW_TITLE :: "cavern"
 
 MOVE_DELAY :: 2
@@ -46,8 +46,7 @@ Game :: struct {
 game: Game
 
 explore_init :: proc() {
-	game.player.x = ROOM_CENTRE
-	game.player.y = ROOM_CENTRE
+	game.player.position = {ROOM_CENTRE, ROOM_CENTRE}
 	game.current_room = 0
 	game.move_timer = 0
 	game.enemy_timer = 0
