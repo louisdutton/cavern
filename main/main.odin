@@ -32,7 +32,7 @@ Game :: struct {
 	player:         Player,
 	world:          ^[ROOM_SIZE][ROOM_SIZE]Tile,
 	current_room:   int,
-	move_timer:     int,
+	move_timer:     int, // the number of frames until the player is allowed to act again
 	enemy_timer:    int,
 	floor_layout:   [FLOOR_SIZE][FLOOR_SIZE]Room,
 	floor_number:   int,
@@ -79,21 +79,15 @@ main :: proc() {
 
 		switch game.mode {
 		case .EXPLORATION:
-			update_player()
+			player_update()
 			update_enemies()
 
 			if check_player_enemy_collision() {
 				continue
 			}
 
-			if game.world[game.player.y][game.player.x] == .EXIT {
-				game.floor_number += 1
-				explore_init()
-				continue
-			}
-
 			render.begin()
-			draw_world()
+			world_draw()
 			draw_floor_number()
 			inventory_draw()
 			draw_player()
@@ -120,6 +114,5 @@ main :: proc() {
 }
 
 load_current_room :: proc() {
-	room := &game.floor_layout[game.room_coords.y][game.room_coords.x]
-	game.world = &room.tiles
+	game.world = &game.floor_layout[game.room_coords.y][game.room_coords.x].tiles
 }

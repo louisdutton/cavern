@@ -59,7 +59,7 @@ combat_init :: proc(enemy_x, enemy_y: int) {
 combat_fini :: proc() {
 	game.mode = .EXPLORATION
 
-	game.world[game.player.y][game.player.x] = .GRASS
+	world_set(game.player.position, .GRASS)
 	game.combat.screen_shake = 0
 
 	clear(&game.combat.entities)

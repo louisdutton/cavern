@@ -3,9 +3,9 @@ package main
 import "render"
 
 Item :: struct {
-	using position:     Vec2,
-	target_x, target_y: int,
-	kind:               Tile,
+	kind:           Tile,
+	using position: Vec2,
+	target:         Vec2,
 }
 
 inventory_draw :: proc() {
@@ -25,6 +25,18 @@ inventory_get_count :: proc(kind: Tile) -> int {
 		}
 	}
 	return count
+}
+
+// Consumes an item of the specified kind from the inventory
+inventory_consume :: proc(kind: Tile) -> bool {
+	for item, idx in game.inventory {
+		if item.kind == kind {
+			ordered_remove(&game.inventory, idx)
+			return true
+		}
+	}
+
+	return false
 }
 
 inventory_update :: proc(player_pos: Vec2) {

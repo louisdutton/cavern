@@ -17,16 +17,6 @@ tile_to_sprite: [Tile]^render.Sprite = {
 	.SECRET_WALL = &render.spr_secret_wall,
 }
 
-draw_world :: proc() {
-	for y in 0 ..< ROOM_SIZE {
-		for x in 0 ..< ROOM_SIZE {
-			tile := game.world[y][x]
-			sprite := tile_to_sprite[tile]
-			render.draw_sprite(sprite, {x, y})
-		}
-	}
-}
-
 draw_player :: proc() {
 	render.draw_sprite(&render.spr_player, game.player.position)
 }
