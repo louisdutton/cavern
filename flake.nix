@@ -63,10 +63,6 @@
             ];
 
             packages = [
-              # tools
-              claude-code
-              # aseprite
-
               # debugging
               gdb
 
@@ -74,6 +70,7 @@
               ols
               nixd
               alejandra
+              vscode-json-languageserver
             ];
 
             # GALLIUM_HUD = "fps,cpu";
