@@ -137,10 +137,6 @@ update_enemies :: proc() {
 	game.enemy_timer = ENEMY_DELAY
 }
 
-check_player_enemy_collision :: proc() -> bool {
-	if world_get(game.player.position) == .ENEMY {
-		combat_init(game.player.x, game.player.y)
-		return true
-	}
-	return false
+is_enemy_collision :: proc() -> bool {
+	return world_get(game.player.position) == .ENEMY
 }

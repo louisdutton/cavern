@@ -28,7 +28,7 @@ CombatGrid :: struct {
 	screen_shake:      int,
 }
 
-combat_init :: proc(enemy_x, enemy_y: int) {
+combat_init :: proc() {
 	game.mode = .COMBAT
 	game.combat.size = 8
 	game.combat.turn = 0
