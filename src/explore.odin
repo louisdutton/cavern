@@ -1,9 +1,5 @@
 package main
 
-import "audio"
-import "core:math/rand"
-import rl "vendor:raylib"
-
 is_in_bounds :: proc(pos: Vec2, max: int = ROOM_SIZE) -> bool {
 	return pos.x < max && pos.y < max && pos.x >= 0 && pos.y >= 0
 }
@@ -103,40 +99,4 @@ unlock_door_connection :: proc(direction: Direction) {
 			neighbor_room.tiles[ROOM_CENTRE][0] = .GRASS
 		}
 	}
-}
-
-update_enemies :: proc() {
-	game.enemy_timer -= 1
-	if game.enemy_timer > 0 do return
-
-	for y in 0 ..< ROOM_SIZE {
-		for x in 0 ..< ROOM_SIZE {
-			if game.world[y][x] == .ENEMY {
-				new_x, new_y := int(x), int(y)
-
-				if rand.int31() % 2 == 0 {
-					if rand.int31() % 2 == 0 {
-						new_x += (int(rand.int31()) % 2) * 2 - 1
-					} else {
-						new_y += (int(rand.int31()) % 2) * 2 - 1
-					}
-				}
-
-				if new_x >= 1 &&
-				   new_x < ROOM_SIZE - 1 &&
-				   new_y >= 1 &&
-				   new_y < ROOM_SIZE - 1 &&
-				   game.world[new_y][new_x] == .GRASS {
-					game.world[y][x] = .GRASS
-					game.world[new_y][new_x] = .ENEMY
-				}
-			}
-		}
-	}
-
-	game.enemy_timer = ENEMY_DELAY
-}
-
-is_enemy_collision :: proc() -> bool {
-	return world_get(game.player.position) == .ENEMY
 }

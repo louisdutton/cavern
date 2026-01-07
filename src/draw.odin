@@ -1,6 +1,5 @@
 package main
 
-import "core:container/rbtree"
 import "render"
 import rl "vendor:raylib"
 

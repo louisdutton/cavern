@@ -26,7 +26,7 @@ player_update :: proc() {
 	// destory secret walls
 	case .SECRET_WALL:
 		world_set(next, .GRASS)
-		add_screen_shake(20)
+		shake_add(.LARGE)
 		player_move(next)
 		audio.play_sound(.DESTROY)
 
@@ -36,7 +36,7 @@ player_update :: proc() {
 
 				if dir, ok := get_door_direction(next).?; ok {
 					unlock_door_connection(dir)
-					add_screen_shake(15)
+					shake_add(.MEDIUM)
 					audio.play_sound(.UNLOCK)
 					audio.play_sound(.DESTROY)
 				}
@@ -62,7 +62,7 @@ player_update :: proc() {
 	// proceed to next floor
 	case .EXIT:
 		game.floor_number += 1
-		explore_init()
+		game_init()
 		audio.play_sound(.UNLOCK)
 
 	// non-traversable tiles
