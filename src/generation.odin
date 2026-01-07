@@ -188,7 +188,7 @@ place_lock_and_key_on_path :: proc(start, end: Vec2) {
 	}
 
 	if key_pos.x == 0 && key_pos.y == 0 {
-		for i in 0..< len(path) - 1 {
+		for i in 0 ..< len(path) - 1 {
 			branch_pos = path[i]
 			for dir in directions {
 				candidate := branch_pos + dir
