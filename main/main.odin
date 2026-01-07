@@ -5,12 +5,12 @@ import "render"
 import rl "vendor:raylib"
 
 GAME_SIZE :: 64
-WINDOW_SIZE :: 384
+WINDOW_SIZE :: GAME_SIZE * 5
 WINDOW_TITLE :: "cavern"
-FPS :: 24
+FPS :: 32
 
-MOVE_DELAY :: 2
-ENEMY_DELAY :: 7
+MOVE_DELAY :: 3
+ENEMY_DELAY :: 8
 
 Player :: struct {
 	using position: Vec2,
