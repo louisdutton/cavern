@@ -23,8 +23,10 @@ current_input: Vec2 = {}
 
 get_raw_input :: proc() -> Vec2 {
 	return {
-		int(rl.IsKeyDown(.D) || rl.IsKeyDown(.L)) - int(rl.IsKeyDown(.A) || rl.IsKeyDown(.H)),
-		int(rl.IsKeyDown(.S) || rl.IsKeyDown(.J)) - int(rl.IsKeyDown(.W) || rl.IsKeyDown(.K)),
+		int(rl.IsKeyDown(.D) || rl.IsKeyDown(.L) || rl.IsKeyDown(.RIGHT)) -
+		int(rl.IsKeyDown(.A) || rl.IsKeyDown(.H) || rl.IsKeyDown(.LEFT)),
+		int(rl.IsKeyDown(.S) || rl.IsKeyDown(.J) || rl.IsKeyDown(.DOWN)) -
+		int(rl.IsKeyDown(.W) || rl.IsKeyDown(.K) || rl.IsKeyDown(.UP)),
 	}
 }
 
