@@ -39,7 +39,7 @@
             ];
 
             buildPhase = ''
-              odin build . -o:speed -out=cavern.bin
+              odin build src -o:speed -out=cavern.bin
             '';
 
             installPhase = ''
