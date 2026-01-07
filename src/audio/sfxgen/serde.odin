@@ -1,0 +1,48 @@
+package main
+
+import "core:fmt"
+import "core:os"
+
+write_wav_header :: proc(file: os.Handle, data_size: int) {
+	chunk_size := u32(36 + data_size)
+	byte_rate := u32(SAMPLE_RATE * CHANNELS * BITS_PER_SAMPLE / 8)
+	block_align := u16(CHANNELS * BITS_PER_SAMPLE / 8)
+
+	os.write_string(file, "RIFF")
+	os.write_ptr(file, &chunk_size, size_of(u32))
+	os.write_string(file, "WAVE")
+
+	os.write_string(file, "fmt ")
+	subchunk1_size := u32(16)
+	audio_format := u16(1)
+	channels := u16(CHANNELS)
+	sample_rate := u32(SAMPLE_RATE)
+	bits_per_sample := u16(BITS_PER_SAMPLE)
+
+	os.write_ptr(file, &subchunk1_size, size_of(u32))
+	os.write_ptr(file, &audio_format, size_of(u16))
+	os.write_ptr(file, &channels, size_of(u16))
+	os.write_ptr(file, &sample_rate, size_of(u32))
+	os.write_ptr(file, &byte_rate, size_of(u32))
+	os.write_ptr(file, &block_align, size_of(u16))
+	os.write_ptr(file, &bits_per_sample, size_of(u16))
+
+	os.write_string(file, "data")
+	data_size_u32 := u32(data_size)
+	os.write_ptr(file, &data_size_u32, size_of(u32))
+}
+
+write_file :: proc(filename: string, samples: []i16) {
+	file, err := os.open(filename, os.O_CREATE | os.O_WRONLY | os.O_TRUNC, 0o644)
+	if err != 0 {
+		fmt.printf("Failed to create file: %s\n", filename)
+		return
+	}
+	defer os.close(file)
+
+	data_size := len(samples) * size_of(i16)
+	write_wav_header(file, data_size)
+	os.write_ptr(file, raw_data(samples), data_size)
+
+	fmt.printf("Generated: %s\n", filename)
+}
