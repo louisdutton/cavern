@@ -1,8 +1,8 @@
 package main
 
+import "../render"
 import "core:math"
 import "core:math/rand"
-import rl "vendor:raylib"
 
 FPS :: 32
 TRANSITION_DURATION :: FPS * 0.75
@@ -45,8 +45,8 @@ transition_draw_circle :: proc(progress: f32) {
 	threshold := progress * max_dist
 	center := f32(SCREEN_SIZE) / 2
 
-	for y := i32(0); y < SCREEN_SIZE; y += BLOCK_SIZE {
-		for x := i32(0); x < SCREEN_SIZE; x += BLOCK_SIZE {
+	for y := 0; y < SCREEN_SIZE; y += BLOCK_SIZE {
+		for x := 0; x < SCREEN_SIZE; x += BLOCK_SIZE {
 			block_center_x := f32(x) + f32(BLOCK_SIZE) / 2
 			block_center_y := f32(y) + f32(BLOCK_SIZE) / 2
 
@@ -55,7 +55,7 @@ transition_draw_circle :: proc(progress: f32) {
 			dist := math.sqrt(dx * dx + dy * dy)
 
 			if dist <= threshold {
-				rl.DrawRectangle(x, y, BLOCK_SIZE, BLOCK_SIZE, rl.BLACK)
+				render.draw_rect({x, y}, {BLOCK_SIZE, BLOCK_SIZE}, .BASE)
 			}
 		}
 	}

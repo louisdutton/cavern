@@ -77,9 +77,9 @@ main :: proc() {
 		// visual
 		render.begin()
 		world_draw()
-		draw_floor_number()
 		inventory_draw()
 		draw_player()
+		render.draw_text(fmt.tprint(game.floor_number), {})
 		render.end()
 
 		render.draw(game.screen_shake)

@@ -10,6 +10,10 @@ world_draw :: proc() {
 			render.draw_sprite(sprite, {x, y})
 		}
 	}
+
+	render.draw_rect({2, 2}, {ROOM_SIZE, ROOM_SIZE} - 4, .WHITE, 0.02)
+	render.draw_rect({3, 3}, {ROOM_SIZE, ROOM_SIZE} - 6, .WHITE, 0.02)
+	render.draw_rect({4, 4}, {ROOM_SIZE, ROOM_SIZE} - 8, .WHITE, 0.02)
 }
 
 // Gets the tile at position

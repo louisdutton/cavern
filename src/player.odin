@@ -1,6 +1,7 @@
 package main
 
 import "audio"
+import "render"
 
 player_update :: proc() {
 	game.move_timer -= 1
@@ -62,6 +63,7 @@ player_update :: proc() {
 	// proceed to next floor
 	case .EXIT:
 		game.floor_number += 1
+		render.change_theme(game.floor_number)
 		game_init()
 		audio.play_sound(.UNLOCK)
 
