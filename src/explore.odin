@@ -4,25 +4,19 @@ is_in_bounds :: proc(pos: Vec2, max: int = ROOM_SIZE) -> bool {
 	return pos.x < max && pos.y < max && pos.x >= 0 && pos.y >= 0
 }
 
-is_tile_walkable :: proc(pos: Vec2) -> bool {
+can_push :: proc(pos: Vec2) -> bool {
 	if !is_in_bounds(pos) do return false
 	tile := world_get(pos)
 
 	#partial switch world_get(pos) {
-	case .STONE, .LOCKED_DOOR, .BOULDER: return false
+	case .STONE, .LOCKED_DOOR, .BOULDER, .SWORD, .SHIELD, .KEY: return false
 	case: return true
 	}
 }
 
-can_push_boulder :: proc(boulder, dir: Vec2) -> bool {
-	return is_tile_walkable(boulder + dir)
-}
-
-push_boulder :: proc(boulder, push_dir: Vec2) {
-	if !can_push_boulder(boulder, push_dir) do return
-
-	world_set(boulder, .GRASS)
-	world_set(boulder + push_dir, .BOULDER)
+push_tile :: proc(from, to: Vec2) {
+	world_set(from, .GRASS)
+	world_set(to, .BOULDER)
 }
 
 get_door_direction :: proc(pos: Vec2) -> Maybe(Direction) {

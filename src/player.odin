@@ -46,10 +46,10 @@ player_update :: proc() {
 
 	// push tiles
 	case .BOULDER:
-		push_dir := next - game.player.position
+		to := next + dir
 
-		if can_push_boulder(next, push_dir) {
-			push_boulder(next, push_dir)
+		if can_push(to) {
+			push_tile(next, to)
 			player_move(next)
 			audio.play_sound(.METAL)
 		}
