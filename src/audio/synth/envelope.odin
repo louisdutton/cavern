@@ -1,4 +1,4 @@
-package main
+package synth
 
 Envelope :: struct {
 	attack:  f32,

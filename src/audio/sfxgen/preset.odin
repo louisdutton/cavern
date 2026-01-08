@@ -1,7 +1,9 @@
 package main
 
+import "../synth"
 import "core:reflect"
 import "core:strings"
+
 Preset :: enum {
 	JUMP,
 	SHOOT,
@@ -13,7 +15,7 @@ Preset :: enum {
 	LASER,
 }
 
-presets := [Preset]SFXParams {
+presets := [Preset]synth.SFXParams {
 	.JUMP = {
 		wave_type = .SQUARE,
 		frequency = 200.0,
@@ -82,7 +84,7 @@ presets := [Preset]SFXParams {
 	},
 }
 
-get_preset :: proc(str: string) -> (sfx: SFXParams, ok: bool) {
+get_preset :: proc(str: string) -> (sfx: synth.SFXParams, ok: bool) {
 	upper := strings.to_upper(str, context.temp_allocator)
 	preset := reflect.enum_from_name(Preset, upper) or_return
 	return presets[preset], true

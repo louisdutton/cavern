@@ -1,11 +1,14 @@
 package main
 
+import "../playback"
+import "../serde"
+import "../synth"
 import "core:fmt"
 import "core:os"
 import "core:strings"
 
 SAMPLE_RATE :: 22050
-BITS_PER_SAMPLE :: 16
+BIT_DEPTH :: 16
 CHANNELS :: 1
 
 main :: proc() {
@@ -26,14 +29,13 @@ main :: proc() {
 		return
 	}
 
-	samples := generate_sfx(sfx)
-	defer delete(samples)
+	samples := synth.generate_sfx(sfx, SAMPLE_RATE, context.temp_allocator)
 
 	if write_mode {
 		filename := strings.concatenate({preset, ".wav"}, context.temp_allocator)
-		write_file(filename, samples)
+		serde.write_wav(filename, samples, SAMPLE_RATE, CHANNELS, BIT_DEPTH)
 	} else {
 		fmt.printf("Playing: %s\n", preset)
-		play_samples(samples)
+		playback.play_samples(samples, CHANNELS, SAMPLE_RATE)
 	}
 }

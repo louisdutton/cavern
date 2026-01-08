@@ -1,4 +1,4 @@
-package main
+package playback
 
 import "base:runtime"
 import "core:fmt"
@@ -28,7 +28,7 @@ audio_callback :: proc "c" (device: ^ma.device, output: rawptr, input: rawptr, f
 	ctx.position += frames_to_copy
 }
 
-play_samples :: proc(samples: []i16) {
+play_samples :: proc(samples: []i16, channels, sample_rate: int) {
 	playback_ctx := Playback_Context {
 		samples  = samples,
 		position = 0,
@@ -36,8 +36,8 @@ play_samples :: proc(samples: []i16) {
 
 	device_config := ma.device_config_init(.playback)
 	device_config.playback.format = .s16
-	device_config.playback.channels = CHANNELS
-	device_config.sampleRate = SAMPLE_RATE
+	device_config.playback.channels = u32(channels)
+	device_config.sampleRate = u32(sample_rate)
 	device_config.dataCallback = audio_callback
 	device_config.pUserData = &playback_ctx
 
