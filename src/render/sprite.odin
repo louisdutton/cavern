@@ -1,7 +1,5 @@
 package render
 
-import rl "vendor:raylib"
-
 TILE_SIZE :: 4
 COMBAT_TILE_SIZE :: 8
 
